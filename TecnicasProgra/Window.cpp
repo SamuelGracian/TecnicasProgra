@@ -23,9 +23,10 @@ Window::~Window()
 #endif
 }
 
-bool Window::init(int width, int heigh, wchar_t* windowName)
+bool Window::init(int width, int height, wchar_t* windowName)
 {
 #if defined(_WIN32)
+  const char CLASS_NAME[] = "DX11WindowClass";
   WNDCLASSEX wc{};
   wc.cbSize = sizeof(wc);
   wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -37,8 +38,8 @@ bool Window::init(int width, int heigh, wchar_t* windowName)
 
   m_hwnd = CreateWindowEx(
       0,
-      windowName,
-      windowName,
+      CLASS_NAME,
+      "Tecnias Progra",
       WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 
       CW_USEDEFAULT, 
