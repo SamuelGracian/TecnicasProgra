@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#ifdef WIN32
+#if defined(_WIN32)
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -18,14 +18,14 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
 Window::~Window()
 {
-#ifdef WIN32
+#if defined(_WIN32)
   DestroyWindow(m_hwnd);
 #endif
 }
 
 bool Window::init(int width, int heigh, wchar_t* windowName)
 {
-#ifdef WIN32
+#if defined(_WIN32)
   WNDCLASSEX wc{};
   wc.cbSize = sizeof(wc);
   wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -63,7 +63,7 @@ bool Window::init(int width, int heigh, wchar_t* windowName)
 
 void Window::processMessages()
 {
-#ifdef WIN32
+#if defined(_WIN32)
   MSG msg{};
   while (GetMessage(&msg, nullptr, 0, 0) > 0)
   {

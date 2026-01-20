@@ -1,5 +1,5 @@
 
-#ifdef WIN32
+#if defined(_WIN32)
 #include <windows.h>
 #endif
 
@@ -15,7 +15,7 @@ class Window {
 
  private:
 
-#ifdef WIN32
+#if defined(_WIN32)
   HWND m_hwnd;
 #endif
 };
