@@ -4,7 +4,8 @@
 #endif
 
 
-class Window {
+class Window 
+{
  public:
   Window() = default;
   ~Window();

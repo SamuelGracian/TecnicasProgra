@@ -4,13 +4,9 @@
 #pragma comment(lib, "dxgi.lib")
 
 GRAPI::~GRAPI()
-{
-	if (m_swapChain) { m_swapChain->Release(); m_swapChain = nullptr; }
-	if (m_context)   { m_context->Release();   m_context = nullptr; }
-	if (m_device)    { m_device->Release();    m_device = nullptr; }
-}
+{}
 
-bool GRAPI::Init(HWND hwnd)
+bool GRAPI::Init(std::weak_ptr<Window> handleWindow)
 {
 	if (!hwnd) return false;
 
@@ -52,4 +48,8 @@ bool GRAPI::Init(HWND hwnd)
 	);
 
 	return SUCCEEDED(hr);
+}
+
+std::shared_ptr<SwapChain> GRAPI::CreateSwapChain(std::weak_ptr<Window> handleWindow, uint32_t width, uint32_t height, GAPI_FORMAT::K)
+{
 }
