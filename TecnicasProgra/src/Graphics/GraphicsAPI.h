@@ -20,14 +20,13 @@ public:
 	GRAPI() = default;
 	~GRAPI() = default;
 
-	bool Init(std::weak_ptr<Window> handleWindow);
+	virtual bool Init(std::weak_ptr<Window> handleWindow) = 0;
 
 	//Clean up function
 	void CleanUpResources();
 
 	std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<Window> handleWindow,uint32_t width = 0, uint32_t height = 0,
 		GAPI_FORMAT::K = GAPI_FORMAT::FORMAT_UNKNOWN);
-
 
 	std::shared_ptr<ConstantBuffer> CreateConstantBuffer(const uint32_t bytewidth = 0,
 		const uint32_t slot = 0,
@@ -63,6 +62,4 @@ public:
 	void SetRenderTarget(const std::weak_ptr <DepthStencilView>& depthStencil);
 
 	std::shared_ptr<ViewPort> CreateViewPort(float width, float height, float minDepth, float maxDepth, float topLeftX, float topLeftY);
-
-
 };
