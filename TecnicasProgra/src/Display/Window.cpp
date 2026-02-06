@@ -16,14 +16,14 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 }
 #endif 
 
-Window::~Window()
+DisplaySurface::~DisplaySurface()
 {
 #if defined(_WIN32)
   DestroyWindow(m_hwnd);
 #endif
 }
 
-bool Window::init(int width, int height, wchar_t* windowName)
+bool DisplaySurface::init(int width, int height, wchar_t* windowName)
 {
 #if defined(_WIN32)
   const char CLASS_NAME[] = "DX11WindowClass";
@@ -62,7 +62,7 @@ bool Window::init(int width, int height, wchar_t* windowName)
 #endif
 }
 
-void Window::processMessages()
+void DisplaySurface::processMessages()
 {
 #if defined(_WIN32)
   MSG msg{};

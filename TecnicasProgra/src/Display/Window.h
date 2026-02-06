@@ -1,14 +1,15 @@
+#pragma once
 
 #if defined(_WIN32)
 #include <windows.h>
 #endif
 
 
-class Window 
+class DisplaySurface 
 {
  public:
-  Window() = default;
-  ~Window();
+  DisplaySurface() = default;
+  ~DisplaySurface();
 
   bool init(int width, int height, wchar_t* windowName);
 

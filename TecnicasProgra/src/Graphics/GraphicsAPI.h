@@ -20,12 +20,12 @@ public:
 	GRAPI() = default;
 	~GRAPI() = default;
 
-	virtual bool Init(std::weak_ptr<Window> handleWindow) = 0;
+	virtual bool Init(std::weak_ptr<DisplaySurface> handleWindow) = 0;
 
 	//Clean up function
 	void CleanUpResources();
 
-	std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<Window> handleWindow,uint32_t width = 0, uint32_t height = 0,
+	std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow,uint32_t width = 0, uint32_t height = 0,
 		GAPI_FORMAT::K = GAPI_FORMAT::FORMAT_UNKNOWN);
 
 	std::shared_ptr<ConstantBuffer> CreateConstantBuffer(const uint32_t bytewidth = 0,

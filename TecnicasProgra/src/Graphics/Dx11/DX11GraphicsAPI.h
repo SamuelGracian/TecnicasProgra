@@ -1,5 +1,5 @@
 #include "GraphicsAPI.h"
-
+#include <d3d11.h>
 // Aquí si puedes inlcuir cosas de DirectX11
 
 class DX11GraphicsAPI : public GRAPI
@@ -7,7 +7,7 @@ class DX11GraphicsAPI : public GRAPI
 public:
   DX11GraphicsAPI();
 
-  bool Init(std::weak_ptr<Window> handleWindow) override;
+  bool Init(std::weak_ptr<DisplaySurface> handleWindow) override;
 
  private:
   ID3D11Device* m_device = nullptr;

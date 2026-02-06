@@ -1,13 +1,14 @@
 #include "DX11GraphicsAPI.h"
 
 #include <memory>
+#include <assert.h>
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 
 DX11GraphicsAPI::DX11GraphicsAPI() {}
 
-bool DX11GraphicsAPI::Init(std::weak_ptr<Window> handleWindow)
+bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
 {
   // Aquí va la inicialización de DirectX 11
   if (handleWindow.expired())
@@ -15,7 +16,7 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<Window> handleWindow)
     return false;
   }
 
-  std::shared_ptr<Window> window = handleWindow.lock();
+  std::shared_ptr<DisplaySurface> window = handleWindow.lock();
 
   // Create Device and Device Context here
 
