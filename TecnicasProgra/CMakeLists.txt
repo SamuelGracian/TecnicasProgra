@@ -1,11 +1,21 @@
-file(GLOB SOURCE_FILES  ${CMAKE_CURRENT_SOURCE_DIR}/src/*/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*/*.h)
-file(GLOB SOURCE_FILES_1  ${CMAKE_CURRENT_SOURCE_DIR}/src/*/*/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*/*/*.h)
 
-add_executable(Graphics ${SOURCE_FILES} ${SOURCE_FILES_1})
+file(GLOB_RECURSE SOURCE_FILES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+)
 
-#includes 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/Graphics)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/Graphics/Dx11)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/Main)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/Display)
+add_executable(Graphics ${SOURCE_FILES})
+
+file(GLOB_RECURSE ALL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*")
+
+set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+foreach(FILE_PATH ${ALL_FILES})
+    if(IS_DIRECTORY "${FILE_PATH}")
+        list(APPEND INCLUDE_DIRS "${FILE_PATH}")
+    endif()
+endforeach()
+
+list(REMOVE_DUPLICATES INCLUDE_DIRS)
+
+target_include_directories(Graphics PRIVATE ${INCLUDE_DIRS})
