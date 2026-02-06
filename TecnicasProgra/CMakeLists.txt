@@ -1,1 +1,1 @@
-add_executable(Graphics main.cpp Window.cpp)
+add_executable(Graphics main.cpp Window.cpp "GRAPI.h" "GRAPI.cpp")
