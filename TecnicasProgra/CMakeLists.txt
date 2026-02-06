@@ -1,1 +1,2 @@
-add_executable(Graphics main.cpp Window.cpp "GRAPI.h" "GRAPI.cpp")
+file(GLOB SOURCE_FILES  ${CMAKE_CURRENT_SOURCE_DIR}/*/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/*/*.h)
+add_executable(Graphics ${SOURCE_FILES})
