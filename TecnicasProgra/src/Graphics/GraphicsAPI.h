@@ -11,7 +11,7 @@
 #include "DepthStencilView.h"
 #include "ViewPort.h"
 #include "GraphicGenerals.h"
-#include "Window.h"
+#include "Display/Window.h"
 
 
 class GRAPI
@@ -25,8 +25,10 @@ public:
 	//Clean up function
 	void CleanUpResources();
 
-	std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow,uint32_t width = 0, uint32_t height = 0,
-		GAPI_FORMAT::K = GAPI_FORMAT::FORMAT_UNKNOWN);
+	virtual std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow,uint32_t width = 0, uint32_t height = 0,
+		GAPI_FORMAT::K = GAPI_FORMAT::FORMAT_UNKNOWN) = 0;
+
+	virtual void ClearSwapChain(std::weak_ptr<SwapChain> swapChain) = 0;
 
 	std::shared_ptr<ConstantBuffer> CreateConstantBuffer(const uint32_t bytewidth = 0,
 		const uint32_t slot = 0,
