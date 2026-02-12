@@ -4,7 +4,7 @@ file(GLOB_RECURSE SOURCE_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
 )
 
-add_executable(Graphics ${SOURCE_FILES})
+add_executable(Graphics ${SOURCE_FILES} "src/Graphics/Dx11/Dx11ConstantBuffer.h" "src/Graphics/Dx11/Dx11IndexBuffer.h" "src/Graphics/Dx11/Dx11VertexBuffer.h")
 
 file(GLOB_RECURSE ALL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*")
 

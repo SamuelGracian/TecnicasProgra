@@ -5,12 +5,26 @@
 #include <iostream>
 
 #include "Graphics/Dx11/Dx11SwapChain.h"
+#include "Graphics/Dx11/Dx11ConstantBuffer.h"
+#include "Graphics/Dx11/Dx11IndexBuffer.h"
+#include "Graphics/Dx11/Dx11VertexBuffer.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 //#pragma comment(lib, "dxgi1_2.lib")
 
 #define SAFE_RELEASE(x) if (x) {x -> Release(); x = nullptr;}
+
+#if !defined(ASSIGN_DEBUG_NAME)
+#   define ASSIGN_DEBUG_NAME(t, a)                                                                  \
+   if (a)                                                                                          \
+    {                                                                                               \
+        std::string n = typeid(t).name();                                                                \
+        a->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<uint32_t>(n.size()), n.c_str());     \
+    }
+#endif
+
+
 
 namespace Dx11HELPERS
 {
@@ -244,4 +258,65 @@ void DX11GraphicsAPI::ClearSwapChain(std::weak_ptr<SwapChain> swapChain)
     std::shared_ptr<Dx11SwapChain> TempSwapChain = std::reinterpret_pointer_cast<Dx11SwapChain> (swapChain.lock());
 
     m_immediateContext->ClearRenderTargetView(TempSwapChain->m_BackBUfferRT, Color);
+}
+
+std::shared_ptr<ConstantBuffer> DX11GraphicsAPI::CreateConstantBuffer(const uint32_t bytewidth, const uint32_t slot, void* data)
+{
+    assert(bytewidth != 0);
+    ID3D11Buffer* Rawbuffer = nullptr;
+    D3D11_BUFFER_DESC bd = {};
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = bytewidth;
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+
+    assert(!FAILED(m_device->CreateBuffer(&bd, nullptr, &Rawbuffer)));
+
+    auto buffer = std::make_shared<Dx11ConstantBuffer>();
+    buffer->m_buffer = Rawbuffer;
+    buffer->SetByteWidth(bytewidth);
+    buffer->SetSlot(slot);
+
+    ASSIGN_DEBUG_NAME(buffer.get(), Rawbuffer);
+    return buffer;
+}
+
+std::shared_ptr<IndexBuffer> DX11GraphicsAPI::CreateIndexBuffer(const uint32_t bytewidth, void* data, uint32_t indexcount)
+{
+    assert(bytewidth != 0);
+    D3D11_BUFFER_DESC bd = {};
+    ID3D11Buffer* Rawbuffer = nullptr;
+    D3D11_SUBRESOURCE_DATA InitData = {};
+
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = bytewidth;
+    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    InitData.pSysMem = data;
+
+    assert(!FAILED(m_device->CreateBuffer(&bd, &InitData, &Rawbuffer)));
+
+    auto buffer = std::make_shared<Dx11IndexBuffer>();
+    buffer->m_buffer = Rawbuffer;
+    return buffer;
+}
+
+std::shared_ptr<VertexBuffer> DX11GraphicsAPI::CreateVertexBuffer(const uint32_t bytewidth, const void* vertices)
+{
+    ID3D11Buffer* Rawbuffer = nullptr;
+
+    D3D11_BUFFER_DESC bd = {};
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = bytewidth;
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+
+    D3D11_SUBRESOURCE_DATA InitData = {};
+    InitData.pSysMem = vertices;
+
+    assert(!FAILED(m_device->CreateBuffer(&bd, &InitData, &Rawbuffer)));
+
+    auto buffer = std::make_shared<Dx11VertexBuffer>();
+    buffer->m_buffer = Rawbuffer;
+    return buffer;
 }

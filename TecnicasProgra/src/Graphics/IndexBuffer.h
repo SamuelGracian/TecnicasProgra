@@ -3,6 +3,7 @@
 
 class IndexBuffer : public BaseBuffer
 {
+public:
 	IndexBuffer() = default;
 	~IndexBuffer() = default;
 };
