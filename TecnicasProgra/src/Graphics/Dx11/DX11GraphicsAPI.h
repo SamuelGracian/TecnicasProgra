@@ -2,10 +2,10 @@
 #include "Graphics/GraphicGenerals.h"
 #include "Display/Window.h"
 
+#include <memory>
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <dxgi.h>
-// Aquí si puedes inlcuir cosas de DirectX11
 
 class DX11GraphicsAPI : public GRAPI
 {
@@ -31,8 +31,35 @@ public:
 
   std::shared_ptr<VertexBuffer> CreateVertexBuffer(const uint32_t bytewidth = 0,
 	  const void* vertices = nullptr) override;
+
+  void SetConstantBuffer(std::weak_ptr<ConstantBuffer> buffer);
+
+  //Update buffers
+ void UpdateConstantBuffer(std::weak_ptr<ConstantBuffer> buffer, const uint32_t bytewidth, void* Data = nullptr) ;
+
+ std::shared_ptr<Topology> CreateTopology(Topology::Type type = Topology::Type::TriangleList) ;
+
+ void SetTopology(std::weak_ptr<Topology> topology) ;
+
+ std::shared_ptr<VertexShader> CreateVertexShader(const char* shader) ;
+
+ std::shared_ptr<PixelShader> CreatePixelShader(const void* shaderBytecode, uint32_t bytecodeLenght) ;
+
+ void SetVertexShader(std::weak_ptr<VertexShader> shader);
+
+  std::shared_ptr<DepthStencilView> CreateDepthStencil(uint32_t width = 0, uint32_t height = 0,
+	  const GAPI_FORMAT::K format = GAPI_FORMAT::FORMAT_UNKNOWN) ;
+
+  void CreateRenderTarget() = 0;
+
+  void SetRenderTarget(const std::weak_ptr <DepthStencilView>& depthStencil) ;
+
+  std::shared_ptr<ViewPort> CreateViewPort(float width, float height, float minDepth,
+	  float maxDepth, float topLeftX, float topLeftY) ;
+
 private:
 
+	// Internal funcitons
   IDXGISwapChain* CreateSwapChain_internal(HWND hwnd, uint32_t width, uint32_t height, GAPI_FORMAT::K format);
 
   ID3D11RenderTargetView* CreateBackBufferRT_internal(IDXGISwapChain* swapChain);

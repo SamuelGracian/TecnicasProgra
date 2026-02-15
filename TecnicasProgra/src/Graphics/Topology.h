@@ -14,7 +14,19 @@ class Topology
         PointList
     };
 
-    Topology();
-    ~Topology();
+    /// <summary>
+    /// Set default topology as triangle list
+    /// </summary>
+    Topology()
+        :m_type(Type::TriangleList)
+    { }
 
+    virtual ~Topology() = default;
+
+    void SetType(Type newType) {m_type = newType; }
+
+    Type GetType() const { return m_type; }
+
+protected:
+    Type m_type;
 };

@@ -1,6 +1,5 @@
 #include "DX11GraphicsAPI.h"
 
-#include <memory>
 #include <assert.h>
 #include <iostream>
 
@@ -8,6 +7,7 @@
 #include "Graphics/Dx11/Dx11ConstantBuffer.h"
 #include "Graphics/Dx11/Dx11IndexBuffer.h"
 #include "Graphics/Dx11/Dx11VertexBuffer.h"
+#include "Graphics/Dx11/Dx11Topology.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -320,3 +320,66 @@ std::shared_ptr<VertexBuffer> DX11GraphicsAPI::CreateVertexBuffer(const uint32_t
     buffer->m_buffer = Rawbuffer;
     return buffer;
 }
+
+void DX11GraphicsAPI::SetConstantBuffer(std::weak_ptr<ConstantBuffer> buffer)
+{
+    if (m_immediateContext == nullptr || buffer.expired())
+    {
+        return;
+    }
+    auto pbuffer = std::static_pointer_cast<Dx11ConstantBuffer>(buffer.lock());
+
+    if (pbuffer == nullptr || pbuffer->m_buffer == nullptr || pbuffer->GetSlot() >= HIGHER_AVAILABLE_SLOT)
+    {
+        return;
+    }
+
+    m_immediateContext->VSSetConstantBuffers(pbuffer->GetSlot(), 1, &pbuffer->m_buffer);
+    m_immediateContext->PSSetConstantBuffers(pbuffer->GetSlot(), 1, &pbuffer->m_buffer);
+}
+
+void DX11GraphicsAPI::UpdateConstantBuffer(std::weak_ptr<ConstantBuffer> buffer, const uint32_t bytewidth, void* Data)
+{
+
+    if (m_immediateContext == nullptr || buffer.expired() || Data == nullptr)
+    {
+        return;
+    }
+    auto pbuffer = std::static_pointer_cast <Dx11ConstantBuffer> (buffer.lock());
+
+    if (pbuffer == nullptr || pbuffer->m_buffer == nullptr || pbuffer->GetByteWidth() != bytewidth)
+    {
+        return;
+    }
+
+    m_immediateContext->UpdateSubresource(pbuffer->m_buffer, 0, nullptr, Data, 0, 0);
+}
+
+std::shared_ptr<Topology> DX11GraphicsAPI::CreateTopology(Topology::Type type)
+{
+    auto topo = std::make_shared<Dx11Topology>();
+    // set base type and DX primitive accordingly
+    topo->SetType(type);
+
+    switch (type)
+    {
+    case Topology::Type::TriangleList:
+        topo->m_topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        break;
+    case Topology::Type::TriangleStrip:
+        topo->m_topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+        break;
+    case Topology::Type::LineList:
+        topo->m_topology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+        break;
+    case Topology::Type::PointList:
+        topo->m_topology = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
+        break;
+    default:
+        topo->m_topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        break;
+    }
+
+    return topo;
+}
+
