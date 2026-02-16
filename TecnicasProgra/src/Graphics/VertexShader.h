@@ -4,6 +4,6 @@
 class VertexShader : public BaseShader
 {
     public:
-    VertexShader();
-    ~VertexShader();
+    VertexShader() = default;
+    ~VertexShader() = default ;
 };

@@ -20,4 +20,5 @@ Dx11Topology::Dx11Topology()
     default:
         m_topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         break;
+    }
 }

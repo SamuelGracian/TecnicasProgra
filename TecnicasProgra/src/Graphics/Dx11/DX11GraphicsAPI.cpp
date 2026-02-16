@@ -2,15 +2,22 @@
 
 #include <assert.h>
 #include <iostream>
+#include <d3dcompiler.h>
+#include <vector>
+#include <string>
 
 #include "Graphics/Dx11/Dx11SwapChain.h"
 #include "Graphics/Dx11/Dx11ConstantBuffer.h"
 #include "Graphics/Dx11/Dx11IndexBuffer.h"
 #include "Graphics/Dx11/Dx11VertexBuffer.h"
 #include "Graphics/Dx11/Dx11Topology.h"
+#include "Graphics/Dx11/Dx11VertexShader.h"
+#include "Graphics/Dx11/Dx11PixelShader.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "dxguid.lib")
 //#pragma comment(lib, "dxgi1_2.lib")
 
 #define SAFE_RELEASE(x) if (x) {x -> Release(); x = nullptr;}
@@ -24,6 +31,30 @@
     }
 #endif
 
+
+const char* GetShaderModel_internal(SHADER_TYPE::K shaderType, uint32_t shaderModel)
+{
+    std::string ResultShader;
+
+    std::string modelVersion = std::to_string(shaderModel) + "_0";
+
+    switch (shaderType)
+    {
+    case SHADER_TYPE::K::VERTEX_SHADER:
+        ResultShader = "vs_" + modelVersion;
+        break;
+
+    case SHADER_TYPE::K::PIXEL_SHADER:
+        ResultShader = "ps_" + modelVersion;
+        break;
+
+    default:
+        ResultShader = "vs_4_0";
+        break;
+    }
+
+    return ResultShader.c_str();
+}
 
 
 namespace Dx11HELPERS
@@ -127,6 +158,10 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
   return true;
 }
 
+void DX11GraphicsAPI::CleanUpResources()
+{
+}
+
 IDXGISwapChain* DX11GraphicsAPI::CreateSwapChain_internal(HWND hwnd, uint32_t width, uint32_t height, GAPI_FORMAT::K format)
 {
     IDXGIFactory1* dxgiFactory1 = nullptr;
@@ -216,6 +251,46 @@ ID3D11RenderTargetView* DX11GraphicsAPI::CreateBackBufferRT_internal(IDXGISwapCh
     SAFE_RELEASE(ResultTextureRt);
 
     return ResultRT;
+}
+
+ID3DBlob* DX11GraphicsAPI::CompileShader_internal(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines, SHADER_TYPE::K shaderType)
+{
+
+    if (!shaderCode.empty() && !entrypoint.empty())
+    {
+
+        std::string FinalShaderCode;
+
+        ID3DBlob* ErrorBlob = nullptr;
+        ID3DBlob* BinaryBlob = nullptr;
+
+        uint32_t dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#ifdef _DEBUG
+        // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+        // Setting this flag improves the shader debugging experience, but still allows 
+        // the shaders to be optimized and to run exactly the way they will run in 
+        // the release configuration of this program.
+        dwShaderFlags |= D3DCOMPILE_DEBUG;
+
+        // Disable optimizations to further improve shader debugging
+        dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+        for (auto& macro : Defines)
+        {
+            FinalShaderCode += (macro + "/n");
+        }
+
+        FinalShaderCode += shaderCode;
+
+        if (D3DCompile(FinalShaderCode.c_str(), sizeof(char) * FinalShaderCode.length(), nullptr, nullptr, nullptr,
+            entrypoint.c_str(), GetShaderModel_internal(SHADER_TYPE::K::VERTEX_SHADER, m_shaderModel), dwShaderFlags, 0, &BinaryBlob, &ErrorBlob))
+        {
+            return BinaryBlob;
+        }
+        std::cout << reinterpret_cast<const char*>(ErrorBlob->GetBufferPointer()) << std::endl;
+        SAFE_RELEASE(ErrorBlob);
+    }
 }
 
 std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow, uint32_t width, uint32_t height, GAPI_FORMAT::K format)
@@ -383,3 +458,82 @@ std::shared_ptr<Topology> DX11GraphicsAPI::CreateTopology(Topology::Type type)
     return topo;
 }
 
+void DX11GraphicsAPI::SetTopology(std::weak_ptr<Topology> topology)
+{
+    if (m_immediateContext == nullptr || topology.expired())
+    {
+        return;
+    }
+
+    auto p_topology = std::static_pointer_cast<Dx11Topology>(topology.lock());
+    if (p_topology == nullptr)
+    {
+        return;
+    }
+
+    m_immediateContext->IASetPrimitiveTopology(p_topology->m_topology);
+}
+
+std::shared_ptr<VertexShader> DX11GraphicsAPI::CreateVertexShader(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines)
+{
+    ID3DBlob* BinaryBlob = nullptr;
+
+    ID3D11VertexShader* ResultShader = nullptr;
+
+    BinaryBlob = CompileShader_internal(shaderCode, entrypoint, Defines, SHADER_TYPE::K::VERTEX_SHADER);
+
+    if (BinaryBlob != nullptr)
+    {
+        ID3D11VertexShader* shader = nullptr;
+        HRESULT hr = m_device->CreateVertexShader(BinaryBlob, BinaryBlob->GetBufferSize(), nullptr, &ResultShader);
+        assert(SUCCEEDED(hr));
+
+        auto shaderPtr = std::make_shared<Dx11VertexShader>();
+        shaderPtr->m_shader = ResultShader;
+
+        return shaderPtr;
+    }
+}
+
+std::shared_ptr<PixelShader> DX11GraphicsAPI::CreatePixelShader(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines)
+{
+    ID3DBlob* BinaryBlob = nullptr;
+
+    ID3D11PixelShader* ResultShader = nullptr;
+
+    BinaryBlob = CompileShader_internal(shaderCode, entrypoint, Defines, SHADER_TYPE::K::PIXEL_SHADER);
+
+    if (BinaryBlob != nullptr)
+    {
+        ID3D11PixelShader* shader = nullptr;
+        HRESULT hr = m_device->CreatePixelShader(BinaryBlob, BinaryBlob->GetBufferSize(), nullptr, &ResultShader);
+        assert(SUCCEEDED(hr));
+
+        auto shaderPtr = std::make_shared<Dx11PixelShader>();
+        shaderPtr->m_shader = ResultShader;
+
+        return shaderPtr;
+    }
+}
+
+void DX11GraphicsAPI::SetVertexShader(std::weak_ptr<VertexShader> shader)
+{
+}
+
+std::shared_ptr<DepthStencilView> DX11GraphicsAPI::CreateDepthStencil(uint32_t width, uint32_t height, const GAPI_FORMAT::K format)
+{
+    return std::shared_ptr<DepthStencilView>();
+}
+
+void DX11GraphicsAPI::CreateRenderTarget()
+{
+}
+
+void DX11GraphicsAPI::SetRenderTarget(const std::weak_ptr<DepthStencilView>& depthStencil)
+{
+}
+
+std::shared_ptr<ViewPort> DX11GraphicsAPI::CreateViewPort(float width, float height, float minDepth, float maxDepth, float topLeftX, float topLeftY)
+{
+    return std::shared_ptr<ViewPort>();
+}

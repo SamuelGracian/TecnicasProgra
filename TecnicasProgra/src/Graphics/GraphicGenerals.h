@@ -22,3 +22,12 @@ namespace GAPI_BIND_FLAGS
         DEPTH_STENCIL = (1<<5)
     };
 };
+
+namespace SHADER_TYPE
+{
+    enum K
+    {
+        VERTEX_SHADER = 0,
+        PIXEL_SHADER
+    };
+}

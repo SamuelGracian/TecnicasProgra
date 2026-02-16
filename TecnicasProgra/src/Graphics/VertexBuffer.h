@@ -5,6 +5,6 @@
 class VertexBuffer  : public BaseBuffer
 {
     public:
-    VertexBuffer();
-    ~VertexBuffer();
+    VertexBuffer() = default;
+    ~VertexBuffer() = default;
 };

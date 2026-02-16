@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "SwapChain.h"
 #include "ConstantBuffer.h"
@@ -17,7 +19,10 @@
 class GRAPI
 {
 public:
-	GRAPI() = default;
+	GRAPI() :
+		m_shaderModel (0) 
+	{ }
+
 	~GRAPI() = default;
 
 	virtual bool Init(std::weak_ptr<DisplaySurface> handleWindow) = 0;
@@ -52,9 +57,9 @@ public:
 
 	virtual void SetTopology(std::weak_ptr<Topology> topology) = 0;
 
-	virtual std::shared_ptr<VertexShader> CreateVertexShader(const char* shader) = 0;
+	virtual std::shared_ptr<VertexShader> CreateVertexShader(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines) = 0;
 
-	virtual std::shared_ptr<PixelShader> CreatePixelShader(const void* shaderBytecode, uint32_t bytecodeLenght) = 0;
+	virtual std::shared_ptr<PixelShader> CreatePixelShader(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines) = 0;
 
 	virtual void SetVertexShader(std::weak_ptr<VertexShader> shader) = 0;
 
@@ -67,5 +72,8 @@ public:
 
 	virtual std::shared_ptr<ViewPort> CreateViewPort(float width, float height, float minDepth, 
 		float maxDepth, float topLeftX, float topLeftY) = 0;
+
+protected:
+	uint32_t m_shaderModel;
 
 };

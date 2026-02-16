@@ -5,10 +5,10 @@
 class BaseShader
 {
     public:
-    BaseShader();
-    ~BaseShader();
+    BaseShader() = default;
+    ~BaseShader() = default;
 
-    private:
+    protected:
     uint32_t m_ByteCodeLenght;
 
 };
