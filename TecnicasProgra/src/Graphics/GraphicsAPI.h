@@ -66,9 +66,6 @@ public:
 	virtual std::shared_ptr<DepthStencilView> CreateDepthStencil(uint32_t width = 0, uint32_t height = 0, 
 		const GAPI_FORMAT::K format = GAPI_FORMAT::FORMAT_UNKNOWN) = 0;
 
-	virtual void CreateRenderTarget() = 0;
-
-	virtual void SetRenderTarget(const std::weak_ptr <DepthStencilView>& depthStencil) = 0;
 
 	virtual std::shared_ptr<ViewPort> CreateViewPort(float width, float height, float minDepth, 
 		float maxDepth, float topLeftX, float topLeftY) = 0;

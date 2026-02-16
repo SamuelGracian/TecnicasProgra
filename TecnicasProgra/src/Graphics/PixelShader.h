@@ -5,6 +5,6 @@
 class PixelShader : public BaseShader
 {
     public:
-    PixelShader();
-    ~PixelShader();
+    PixelShader() = default;
+    ~PixelShader() = default;
 };

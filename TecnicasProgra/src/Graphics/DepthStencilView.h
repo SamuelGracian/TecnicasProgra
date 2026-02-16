@@ -2,6 +2,7 @@
 
 class DepthStencilView
 {
-    DepthStencilView();
-    ~DepthStencilView();
+public:
+    DepthStencilView() = default;
+    ~DepthStencilView() = default;
 };

@@ -52,10 +52,6 @@ public:
   std::shared_ptr<DepthStencilView> CreateDepthStencil(uint32_t width = 0, uint32_t height = 0,
 	  const GAPI_FORMAT::K format = GAPI_FORMAT::FORMAT_UNKNOWN)override;
 
-  void CreateRenderTarget() override;
-
-  void SetRenderTarget(const std::weak_ptr <DepthStencilView>& depthStencil) override;
-
   std::shared_ptr<ViewPort> CreateViewPort(float width, float height, float minDepth,
 	  float maxDepth, float topLeftX, float topLeftY)override;
 
@@ -66,8 +62,12 @@ private:
 
   ID3D11RenderTargetView* CreateBackBufferRT_internal(IDXGISwapChain* swapChain);
 
-  ID3DBlob* CompileShader_internal(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines, SHADER_TYPE::K shaderType);
+  ID3DBlob* CompileShader_internal(const std::string& shaderCode, const std::string& entrypoint, 
+	  std::vector<std::string> Defines, SHADER_TYPE::K shaderType);
 
+  ID3D11Texture2D* CreateTexture2D_internal(uint32_t width, uint32_t height, const GAPI_FORMAT::K format, uint32_t bindFlags);
+
+  ID3D11DepthStencilView* CreateDepthStencilView_internal(ID3D11Texture2D* texture);
 
  private:
   ID3D11Device* m_device = nullptr;
