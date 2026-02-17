@@ -1,3 +1,4 @@
+#pragma once
 #include "Graphics/GraphicsAPI.h"
 #include "Graphics/GraphicGenerals.h"
 #include "Display/Window.h"
@@ -54,6 +55,8 @@ public:
 
   std::shared_ptr<ViewPort> CreateViewPort(float width, float height, float minDepth,
 	  float maxDepth, float topLeftX, float topLeftY)override;
+
+  void SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView) override;
 
 private:
 

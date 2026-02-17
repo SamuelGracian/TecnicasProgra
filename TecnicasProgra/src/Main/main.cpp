@@ -14,14 +14,19 @@ int main()
   std::shared_ptr<GRAPI> graphics = std::make_shared<DX11GraphicsAPI>();
   graphics->Init(window);
 
-  std::shared_ptr<SwapChain> SwapChain = graphics->CreateSwapChain(window, widht,height, GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
+  std::shared_ptr<SwapChain> P_swapChain = graphics->CreateSwapChain(window, widht,height, GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
 
-  graphics->ClearSwapChain(SwapChain);
+  auto RTView = P_swapChain->GetRenderTargetView();
+
+  graphics->SetRenderTargetView(RTView);
+
 
   bool isAppRunning = true;
   while (isAppRunning)
   {
     window->processMessages();
+    graphics->ClearSwapChain(P_swapChain);
+    P_swapChain->Present(0,0);
   }
 
   return 1;

@@ -3,6 +3,6 @@
 class ViewPort
 {
     public:
-    ViewPort();
-    ~ViewPort();
+    ViewPort() = default;
+    ~ViewPort() = default;
 };

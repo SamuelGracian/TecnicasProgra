@@ -66,7 +66,7 @@ void DisplaySurface::processMessages()
 {
 #if defined(_WIN32)
   MSG msg{};
-  while (GetMessage(&msg, nullptr, 0, 0) > 0)
+  if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
   {
     TranslateMessage(&msg);
     DispatchMessage(&msg);

@@ -14,6 +14,7 @@
 #include "ViewPort.h"
 #include "GraphicGenerals.h"
 #include "Display/Window.h"
+#include "Graphics/RenderTargetView.h"
 
 
 class GRAPI
@@ -69,6 +70,8 @@ public:
 
 	virtual std::shared_ptr<ViewPort> CreateViewPort(float width, float height, float minDepth, 
 		float maxDepth, float topLeftX, float topLeftY) = 0;
+
+	virtual void SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView) = 0;
 
 protected:
 	uint32_t m_shaderModel;

@@ -1,3 +1,4 @@
+#pragma once
 #include "DX11GraphicsAPI.h"
 
 #include <assert.h>
@@ -14,6 +15,7 @@
 #include "Graphics/Dx11/Dx11VertexShader.h"
 #include "Graphics/Dx11/Dx11PixelShader.h"
 #include "Graphics/Dx11/Dx11DepthStencil.h"
+#include "Graphics/Dx11/Dx11RenderTargetView.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -209,6 +211,16 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
   }
   assert(!FAILED(hr));
 
+  D3D11_VIEWPORT viewport;
+
+  ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+
+  viewport.TopLeftX = 0;
+  viewport.TopLeftY = 0;
+  viewport.Width = 800;
+  viewport.Height = 600;
+
+  m_immediateContext->RSSetViewports(1, &viewport);
 
   return true;
 }
@@ -417,7 +429,7 @@ std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<Displa
 
             std::shared_ptr<Dx11SwapChain> tempSwapChain = std::reinterpret_pointer_cast<Dx11SwapChain>(SChain);
 
-            tempSwapChain->m_BackBUfferRT = ResultRT;
+            tempSwapChain->m_BackBufferRT = ResultRT;
 
             tempSwapChain->m_swapChain = ResultSwapChain;
         }
@@ -427,7 +439,7 @@ std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<Displa
 
 void DX11GraphicsAPI::ClearSwapChain(std::weak_ptr<SwapChain> swapChain)
 {
-    float Color[4] = { 1,0,0,1 };
+    float Color[4] = { 1,1,0,1 };
 
     if (swapChain.expired())
     {
@@ -436,7 +448,7 @@ void DX11GraphicsAPI::ClearSwapChain(std::weak_ptr<SwapChain> swapChain)
     }
     std::shared_ptr<Dx11SwapChain> TempSwapChain = std::reinterpret_pointer_cast<Dx11SwapChain> (swapChain.lock());
 
-    m_immediateContext->ClearRenderTargetView(TempSwapChain->m_BackBUfferRT, Color);
+    m_immediateContext->ClearRenderTargetView(TempSwapChain->m_BackBufferRT, Color);
 }
 
 std::shared_ptr<ConstantBuffer> DX11GraphicsAPI::CreateConstantBuffer(const uint32_t bytewidth, const uint32_t slot, void* data)
@@ -649,4 +661,19 @@ std::shared_ptr<DepthStencilView> DX11GraphicsAPI::CreateDepthStencil(uint32_t w
 std::shared_ptr<ViewPort> DX11GraphicsAPI::CreateViewPort(float width, float height, float minDepth, float maxDepth, float topLeftX, float topLeftY)
 {
     return std::shared_ptr<ViewPort>();
+}
+
+void DX11GraphicsAPI::SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView)
+{
+    if (renderTargetView.expired())
+    {
+        std::cout << "Expired render Target View" << std::endl;
+        return;
+    }
+
+    std::shared_ptr<Dx11RenderTargetView> Dx11RT = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
+    
+    assert(Dx11RT->m_renderTargetView);
+
+    m_immediateContext->OMSetRenderTargets(1, &Dx11RT->m_renderTargetView, nullptr);
 }
