@@ -31,20 +31,24 @@ public:
 	//Clean up function
 	virtual void CleanUpResources() = 0;
 
+	//Swap Chain
 	virtual std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow,uint32_t width = 0,
 		uint32_t height = 0,
 		GAPI_FORMAT::K = GAPI_FORMAT::FORMAT_UNKNOWN) = 0;
 
 	virtual void ClearSwapChain(std::weak_ptr<SwapChain> swapChain) = 0;
 
+	//const buffer
 	virtual std::shared_ptr<ConstantBuffer> CreateConstantBuffer(const uint32_t bytewidth = 0,
 		const uint32_t slot = 0,
 		void* data = nullptr) = 0;
 
+	//Index buffer
 	virtual std::shared_ptr<IndexBuffer> CreateIndexBuffer(const uint32_t bytewidth = 0,
 		void* data = nullptr,
 		uint32_t indexcount = 0) = 0;
 
+	//Vertex buffer
 	virtual std::shared_ptr<VertexBuffer> CreateVertexBuffer(const uint32_t bytewidth = 0,
 		const void* vertices = nullptr) = 0;
 
@@ -54,16 +58,19 @@ public:
 	//Update buffers
 	virtual void UpdateConstantBuffer(std::weak_ptr<ConstantBuffer> buffer, const uint32_t bytewidth, void* Data = nullptr) = 0;
 
+	//Topology
 	virtual std::shared_ptr<Topology> CreateTopology(Topology::Type type = Topology::Type::TriangleList) = 0;
 
 	virtual void SetTopology(std::weak_ptr<Topology> topology) = 0;
 
+	//Shaders
 	virtual std::shared_ptr<VertexShader> CreateVertexShader(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines) = 0;
 
 	virtual std::shared_ptr<PixelShader> CreatePixelShader(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines) = 0;
 
 	virtual void SetVertexShader(std::weak_ptr<VertexShader> shader) = 0;
 
+	//Depth stencil 
 	virtual std::shared_ptr<DepthStencilView> CreateDepthStencil(uint32_t width = 0, uint32_t height = 0, 
 		const GAPI_FORMAT::K format = GAPI_FORMAT::FORMAT_UNKNOWN) = 0;
 

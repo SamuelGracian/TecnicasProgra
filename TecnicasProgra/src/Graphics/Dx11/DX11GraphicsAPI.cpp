@@ -34,7 +34,7 @@
     }
 #endif
 
-
+//* //////////////////////////// HELPERS
 DXGI_FORMAT GetDX11Format_internal(const GAPI_FORMAT::K format)
 {
     switch (format)
@@ -134,6 +134,80 @@ namespace Dx11HELPERS
     }
 }
 
+std::vector<D3D11_INPUT_ELEMENT_DESC> CreateInputLayoutDesc_internal(ID3DBlob* vertexShaderBlob)
+{
+    std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayoutDesc;
+    ID3D11ShaderReflection* reflection = nullptr;
+
+    if (!vertexShaderBlob)
+    {
+        std::cout << "Empty VertexShader blob" << std::endl;
+        return inputLayoutDesc;  // Return empty vector
+    }
+
+    if (SUCCEEDED(D3DReflect(
+        vertexShaderBlob->GetBufferPointer(),
+        vertexShaderBlob->GetBufferSize(),
+        IID_ID3D11ShaderReflection,
+        (void**)&reflection)))
+    {
+        D3D11_SHADER_DESC shaderDesc;
+        reflection->GetDesc(&shaderDesc);
+
+        inputLayoutDesc.reserve(shaderDesc.InputParameters);
+
+        for (UINT i = 0; i < shaderDesc.InputParameters; ++i)
+        {
+            D3D11_SIGNATURE_PARAMETER_DESC paramDesc;
+            reflection->GetInputParameterDesc(i, &paramDesc);
+
+            D3D11_INPUT_ELEMENT_DESC elementDesc = {};
+            elementDesc.SemanticName = paramDesc.SemanticName;
+            elementDesc.SemanticIndex = paramDesc.SemanticIndex;
+            elementDesc.InputSlot = 0;
+            elementDesc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+            elementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+            elementDesc.InstanceDataStepRate = 0;
+
+            UINT componentCount = 0;
+            if (paramDesc.Mask == 1) componentCount = 1;
+            else if (paramDesc.Mask <= 3) componentCount = 2;
+            else if (paramDesc.Mask <= 7) componentCount = 3;
+            else if (paramDesc.Mask <= 15) componentCount = 4;
+
+            if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32)
+            {
+                if (componentCount == 1) elementDesc.Format = DXGI_FORMAT_R32_FLOAT;
+                else if (componentCount == 2) elementDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+                else if (componentCount == 3) elementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+                else if (componentCount == 4) elementDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+            }
+            else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32)
+            {
+                if (componentCount == 1) elementDesc.Format = DXGI_FORMAT_R32_UINT;
+                else if (componentCount == 2) elementDesc.Format = DXGI_FORMAT_R32G32_UINT;
+                else if (componentCount == 3) elementDesc.Format = DXGI_FORMAT_R32G32B32_UINT;
+                else if (componentCount == 4) elementDesc.Format = DXGI_FORMAT_R32G32B32A32_UINT;
+            }
+            else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32)
+            {
+                if (componentCount == 1) elementDesc.Format = DXGI_FORMAT_R32_SINT;
+                else if (componentCount == 2) elementDesc.Format = DXGI_FORMAT_R32G32_SINT;
+                else if (componentCount == 3) elementDesc.Format = DXGI_FORMAT_R32G32B32_SINT;
+                else if (componentCount == 4) elementDesc.Format = DXGI_FORMAT_R32G32B32A32_SINT;
+            }
+
+            inputLayoutDesc.push_back(elementDesc);
+        }
+
+        reflection->Release();
+    }
+
+    return inputLayoutDesc;
+}
+
+
+//* ///////////////////////////////////////////////////////
 DX11GraphicsAPI::DX11GraphicsAPI() {}
 
 bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
@@ -439,7 +513,7 @@ std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<Displa
 
 void DX11GraphicsAPI::ClearSwapChain(std::weak_ptr<SwapChain> swapChain)
 {
-    float Color[4] = { 1,1,0,1 };
+    float Color[4] = { 1,12,0,1 };
 
     if (swapChain.expired())
     {
@@ -596,19 +670,30 @@ std::shared_ptr<VertexShader> DX11GraphicsAPI::CreateVertexShader(const std::str
 
     ID3D11VertexShader* ResultShader = nullptr;
 
+    ID3D11InputLayout* resultLayout = nullptr;
+
     BinaryBlob = CompileShader_internal(shaderCode, entrypoint, Defines, SHADER_TYPE::K::VERTEX_SHADER);
 
-    if (BinaryBlob != nullptr)
+    std::shared_ptr<Dx11VertexShader> p_VS = nullptr;
+
+    if (BinaryBlob != nullptr && m_device != nullptr)
     {
-        ID3D11VertexShader* shader = nullptr;
-        HRESULT hr = m_device->CreateVertexShader(BinaryBlob, BinaryBlob->GetBufferSize(), nullptr, &ResultShader);
-        assert(SUCCEEDED(hr));
+        auto desc = CreateInputLayoutDesc_internal(BinaryBlob);
 
-        auto shaderPtr = std::make_shared<Dx11VertexShader>();
-        shaderPtr->m_shader = ResultShader;
+        if (!desc.empty())
+        {
+            if (SUCCEEDED(m_device->CreateVertexShader(BinaryBlob, BinaryBlob->GetBufferSize(), nullptr, &ResultShader)) &&
+                SUCCEEDED(m_device->CreateInputLayout(desc.data(), desc.size(), BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), &resultLayout)))
+            {
+                p_VS = std::make_shared<Dx11VertexShader>();
+                p_VS->m_shader = ResultShader;
+                p_VS->m_InputLayout = resultLayout;
+            }
+        }
 
-        return shaderPtr;
+        SAFE_RELEASE(BinaryBlob);
     }
+    return p_VS;
 }
 
 std::shared_ptr<PixelShader> DX11GraphicsAPI::CreatePixelShader(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines)
@@ -634,6 +719,14 @@ std::shared_ptr<PixelShader> DX11GraphicsAPI::CreatePixelShader(const std::strin
 
 void DX11GraphicsAPI::SetVertexShader(std::weak_ptr<VertexShader> shader)
 {
+    if (shader.expired())
+    {
+        auto p_VS = std::reinterpret_pointer_cast<Dx11VertexShader>(shader.lock());
+
+        m_immediateContext->IASetInputLayout(p_VS->m_InputLayout);
+
+        m_immediateContext->VSSetShader(p_VS->m_shader, nullptr, 0);
+    }
 }
 
 std::shared_ptr<DepthStencilView> DX11GraphicsAPI::CreateDepthStencil(uint32_t width, uint32_t height, const GAPI_FORMAT::K format)

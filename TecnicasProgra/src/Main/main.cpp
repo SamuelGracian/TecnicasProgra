@@ -1,6 +1,13 @@
-
 #include "Graphics/Dx11/DX11GraphicsAPI.h"
+#include <DirectXMath.h>
 
+
+        
+struct VERTEX
+{               
+    float x, y, z;
+    DirectX::XMFLOAT4 Color;
+};
 
 int main()
 {
@@ -20,6 +27,12 @@ int main()
 
   graphics->SetRenderTargetView(RTView);
 
+  VERTEX TriangleVertices[] =
+  {
+      {0.0f, 0.5f, 0.0f, DirectX::XMFLOAT4 (1.0f, 0.0f, 0.0f, 1.0f)},
+      {0.45f, -0.5, 0.0f, DirectX::XMFLOAT4 (0.0f, 1.0f, 0.0f, 1.0f)},
+      {-0.45f, -0.5f, 0.0f, DirectX::XMFLOAT4 (0.0f, 0.0f, 1.0f, 1.0f)}
+  };
 
   bool isAppRunning = true;
   while (isAppRunning)

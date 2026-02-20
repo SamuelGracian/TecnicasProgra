@@ -71,7 +71,6 @@ private:
   ID3D11Texture2D* CreateTexture2D_internal(uint32_t width, uint32_t height, const GAPI_FORMAT::K format, uint32_t bindFlags);
 
   ID3D11DepthStencilView* CreateDepthStencilView_internal(ID3D11Texture2D* texture);
-
  private:
   ID3D11Device* m_device = nullptr;
   ID3D11DeviceContext* m_immediateContext = nullptr;
