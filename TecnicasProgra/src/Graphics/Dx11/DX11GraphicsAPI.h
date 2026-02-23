@@ -50,6 +50,12 @@ public:
 
  void SetVertexShader(std::weak_ptr<VertexShader> shader)override;
 
+ void SetPixelShader(std::weak_ptr<PixelShader> shader)override;
+
+ void SetVertexBuffer(std::weak_ptr<VertexBuffer> buffer, uint32_t stride, uint32_t offset = 0)override;
+
+ void Draw(uint32_t vertexCount, uint32_t startVertexLocation = 0)override;
+
   std::shared_ptr<DepthStencilView> CreateDepthStencil(uint32_t width = 0, uint32_t height = 0,
 	  const GAPI_FORMAT::K format = GAPI_FORMAT::FORMAT_UNKNOWN)override;
 

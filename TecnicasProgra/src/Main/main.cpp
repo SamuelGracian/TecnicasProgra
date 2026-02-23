@@ -1,5 +1,4 @@
 #include "Graphics/Dx11/DX11GraphicsAPI.h"
-#include <DirectXMath.h>
 #include <fstream>
 #include <string>
 #include <sstream> 
@@ -9,7 +8,7 @@
 struct VERTEX
 {               
     float x, y, z;
-    DirectX::XMFLOAT4 Color;
+    float Color[4] = { 1,12,0,1 };
 };
         
 std::vector<std::string> defines{ "#define TEST" };
@@ -50,15 +49,17 @@ int main()
   //vertex shader
   std::shared_ptr<VertexShader> p_vertexShader = graphics->CreateVertexShader(ReadFileToString( L"Shaders.shaders"), "VS", defines);
 
+  graphics->SetVertexShader(p_vertexShader);
+
   auto RTView = P_swapChain->GetRenderTargetView();
 
   graphics->SetRenderTargetView(RTView);
 
   VERTEX TriangleVertices[] =
   {
-      {0.0f, 0.5f, 0.0f, DirectX::XMFLOAT4 (1.0f, 0.0f, 0.0f, 1.0f)},
-      {0.45f, -0.5, 0.0f, DirectX::XMFLOAT4 (0.0f, 1.0f, 0.0f, 1.0f)},
-      {-0.45f, -0.5f, 0.0f, DirectX::XMFLOAT4 (0.0f, 0.0f, 1.0f, 1.0f)}
+      {0.0f, 0.5f, 0.0f,  {1.0f, 0.0f, 0.0f, 1.0f} },
+      {0.45f, -0.5, 0.0f, {0.0f, 1.0f, 0.0f, 1.0f}},
+      {-0.45f, -0.5f, 0.0f, {0.0f, 0.0f, 1.0f, 1.0f} }
   };
 
   bool isAppRunning = true;

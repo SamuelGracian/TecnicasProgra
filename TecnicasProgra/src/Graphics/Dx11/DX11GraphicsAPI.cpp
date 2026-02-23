@@ -721,35 +721,60 @@ void DX11GraphicsAPI::SetVertexShader(std::weak_ptr<VertexShader> shader)
 {
     if (shader.expired())
     {
-        auto p_VS = std::reinterpret_pointer_cast<Dx11VertexShader>(shader.lock());
+        return;
+    }
 
+    auto p_VS = std::reinterpret_pointer_cast<Dx11VertexShader>(shader.lock());
+
+    if (p_VS && m_immediateContext)
+    {
         m_immediateContext->IASetInputLayout(p_VS->m_InputLayout);
-
         m_immediateContext->VSSetShader(p_VS->m_shader, nullptr, 0);
+    }
+}
+
+void DX11GraphicsAPI::SetPixelShader(std::weak_ptr<PixelShader> shader)
+{
+    if (shader.expired())
+    {
+        return;
+    }
+
+    auto p_PS = std::reinterpret_pointer_cast<Dx11PixelShader>(shader.lock());
+
+    if (p_PS && m_immediateContext)
+    {
+        m_immediateContext->PSSetShader(p_PS->m_shader, nullptr, 0);
+    }
+}
+
+void DX11GraphicsAPI::SetVertexBuffer(std::weak_ptr<VertexBuffer> buffer, uint32_t stride, uint32_t offset)
+{
+    if (buffer.expired() || m_immediateContext == nullptr)
+    {
+        return;
+    }
+
+    auto p_buffer = std::static_pointer_cast<Dx11VertexBuffer>(buffer.lock());
+
+    if (p_buffer && p_buffer->m_buffer)
+    {
+        m_immediateContext->IASetVertexBuffers(0, 1, &p_buffer->m_buffer, &stride, &offset);
+    }
+}
+
+void DX11GraphicsAPI::Draw(uint32_t vertexCount, uint32_t startVertexLocation)
+{
+    if (m_immediateContext)
+    {
+        m_immediateContext->Draw(vertexCount, startVertexLocation);
     }
 }
 
 std::shared_ptr<DepthStencilView> DX11GraphicsAPI::CreateDepthStencil(uint32_t width, uint32_t height, const GAPI_FORMAT::K format)
 {
-    std::shared_ptr<Dx11DepthStencilView> ResultStencil = nullptr;
-
-    if (width != 0 && height != 0 && format != GAPI_FORMAT::FORMAT_UNKNOWN)
-    {
-        if (auto* Texture2D = CreateTexture2D_internal(width, height, format, GAPI_BIND_FLAGS::DEPTH_STENCIL))
-        {
-            if (auto* DepthStencilView = CreateDepthStencilView_internal(Texture2D))
-            {
-                SAFE_RELEASE(Texture2D);
-
-                ResultStencil = std::make_shared<Dx11DepthStencilView>();
-
-                ResultStencil->m_depthStencilView = DepthStencilView;
-            }
-        }
-    }
-    return ResultStencil;
+    return std::shared_ptr<DepthStencilView>();
 }
-
 
 std::shared_ptr<ViewPort> DX11GraphicsAPI::CreateViewPort(float width, float height, float minDepth, float maxDepth, float topLeftX, float topLeftY)
 {
@@ -765,8 +790,9 @@ void DX11GraphicsAPI::SetRenderTargetView(std::weak_ptr<RenderTargetView> render
     }
 
     std::shared_ptr<Dx11RenderTargetView> Dx11RT = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
-    
+
     assert(Dx11RT->m_renderTargetView);
 
     m_immediateContext->OMSetRenderTargets(1, &Dx11RT->m_renderTargetView, nullptr);
+
 }

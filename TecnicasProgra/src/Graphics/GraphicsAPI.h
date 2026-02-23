@@ -70,6 +70,12 @@ public:
 
 	virtual void SetVertexShader(std::weak_ptr<VertexShader> shader) = 0;
 
+	virtual void SetPixelShader(std::weak_ptr<PixelShader> shader) = 0;
+
+	virtual void SetVertexBuffer(std::weak_ptr<VertexBuffer> buffer, uint32_t stride, uint32_t offset = 0) = 0;
+
+	virtual void Draw(uint32_t vertexCount, uint32_t startVertexLocation = 0) = 0;
+
 	//Depth stencil 
 	virtual std::shared_ptr<DepthStencilView> CreateDepthStencil(uint32_t width = 0, uint32_t height = 0, 
 		const GAPI_FORMAT::K format = GAPI_FORMAT::FORMAT_UNKNOWN) = 0;
