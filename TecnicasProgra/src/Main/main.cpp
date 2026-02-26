@@ -7,7 +7,7 @@
         
 struct VERTEX
 {               
-    float x, y, z;
+    float x, y, z, w;
     float Color[4] = { 1,12,0,1 };
 };
         
@@ -34,41 +34,50 @@ std::string ReadFileToString(const std::wstring& filePath)
 int main()
 {
     uint32_t width = 800;
-
     uint32_t height = 600;
 
-  std::shared_ptr<DisplaySurface> window = std::make_shared<DisplaySurface>();
-  window->init(width,height, L"Tecnicas Progra");
+    std::shared_ptr<DisplaySurface> window = std::make_shared<DisplaySurface>();
+    window->init(width, height, L"Tecnicas Progra");
 
-  std::shared_ptr<GRAPI> graphics = std::make_shared<DX11GraphicsAPI>();
-  graphics->Init(window);
+    std::shared_ptr<GRAPI> graphics = std::make_shared<DX11GraphicsAPI>();
+    graphics->Init(window);
 
-  //Swap chain
-  std::shared_ptr<SwapChain> P_swapChain = graphics->CreateSwapChain(window, width,height, GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
+    std::shared_ptr<SwapChain> P_swapChain = graphics->CreateSwapChain(window, width, height, GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
 
-  //vertex shader
-  std::shared_ptr<VertexShader> p_vertexShader = graphics->CreateVertexShader(ReadFileToString( L"Shaders.shaders"), "VS", defines);
+    std::shared_ptr<VertexShader> p_vertexShader = graphics->CreateVertexShader(ReadFileToString(L"Shaders/Shaders.fxh"), "VShader", defines);
+    
+    std::shared_ptr<PixelShader> p_pixelShader = graphics->CreatePixelShader(ReadFileToString(L"Shaders/Shaders.fxh"), "PShader", defines);
 
-  graphics->SetVertexShader(p_vertexShader);
+    auto RTView = P_swapChain->GetRenderTargetView();
 
-  auto RTView = P_swapChain->GetRenderTargetView();
+    VERTEX TriangleVertices[] =
+    {
+        {0.0f, 0.5f, 0.0f, 1.0f,  {1.0f, 0.0f, 0.0f, 1.0f} },
+        {0.45f, -0.5f, 0.0f, 1.0f, {0.0f, 1.0f, 0.0f, 1.0f}},
+        {-0.45f, -0.5f, 0.0f, 1.0f, {0.0f, 0.0f, 1.0f, 1.0f} }
+    };
 
-  graphics->SetRenderTargetView(RTView);
+    std::shared_ptr<VertexBuffer> p_vertexBuffer = graphics->CreateVertexBuffer(sizeof(TriangleVertices), TriangleVertices);
 
-  VERTEX TriangleVertices[] =
-  {
-      {0.0f, 0.5f, 0.0f,  {1.0f, 0.0f, 0.0f, 1.0f} },
-      {0.45f, -0.5, 0.0f, {0.0f, 1.0f, 0.0f, 1.0f}},
-      {-0.45f, -0.5f, 0.0f, {0.0f, 0.0f, 1.0f, 1.0f} }
-  };
+    std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
 
-  bool isAppRunning = true;
-  while (isAppRunning)
-  {
-    window->processMessages();
-    graphics->ClearSwapChain(P_swapChain);
-    P_swapChain->Present(0,0);
-  }
+    bool isAppRunning = true;
+    while (isAppRunning)
+    {
+        window->processMessages();
+        
+        graphics->ClearSwapChain(P_swapChain);
+        
+        graphics->SetRenderTargetView(RTView);
+        graphics->SetTopology(p_topology);
+        graphics->SetVertexShader(p_vertexShader);
+        graphics->SetPixelShader(p_pixelShader);
+        graphics->SetVertexBuffer(p_vertexBuffer, sizeof(VERTEX), 0);
+        
+        graphics->Draw(3, 0);
+        
+        P_swapChain->Present(0, 0);
+    }
 
-  return 1;
+    return 0;
 }

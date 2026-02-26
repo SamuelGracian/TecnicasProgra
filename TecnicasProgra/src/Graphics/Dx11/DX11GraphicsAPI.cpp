@@ -91,7 +91,7 @@ uint32_t GetDx11BindFlag_internal(uint32_t bindFlags)
 
 const char* GetShaderModel_internal(SHADER_TYPE::K shaderType, uint32_t shaderModel)
 {
-    std::string ResultShader;
+    static std::string ResultShader;
 
     std::string modelVersion = std::to_string(shaderModel) + "_0";
 
@@ -208,7 +208,10 @@ std::vector<D3D11_INPUT_ELEMENT_DESC> CreateInputLayoutDesc_internal(ID3DBlob* v
 
 
 //* ///////////////////////////////////////////////////////
-DX11GraphicsAPI::DX11GraphicsAPI() {}
+DX11GraphicsAPI::DX11GraphicsAPI() 
+{
+    m_shaderModel = 5;
+}
 
 bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
 {
@@ -419,19 +422,28 @@ ID3DBlob* DX11GraphicsAPI::CompileShader_internal(const std::string& shaderCode,
 
         for (auto& macro : Defines)
         {
-            FinalShaderCode += (macro + "/n");
+            FinalShaderCode += (macro + '\n');
         }
 
         FinalShaderCode += shaderCode;
 
-        if (D3DCompile(FinalShaderCode.c_str(), sizeof(char) * FinalShaderCode.length(), nullptr, nullptr, nullptr,
-            entrypoint.c_str(), GetShaderModel_internal(SHADER_TYPE::K::VERTEX_SHADER, m_shaderModel), dwShaderFlags, 0, &BinaryBlob, &ErrorBlob))
+        HRESULT hr = D3DCompile(FinalShaderCode.c_str(), FinalShaderCode.length(), nullptr, nullptr, nullptr,
+            entrypoint.c_str(), GetShaderModel_internal(shaderType, m_shaderModel), dwShaderFlags, 0, &BinaryBlob, &ErrorBlob);
+        
+        if (SUCCEEDED(hr))
         {
+            SAFE_RELEASE(ErrorBlob);
             return BinaryBlob;
         }
-        std::cout << reinterpret_cast<const char*>(ErrorBlob->GetBufferPointer()) << std::endl;
-        SAFE_RELEASE(ErrorBlob);
+        
+        if (ErrorBlob)
+        {
+            std::cout << "Shader Compilation Error: " << reinterpret_cast<const char*>(ErrorBlob->GetBufferPointer()) << std::endl;
+            SAFE_RELEASE(ErrorBlob);
+        }
     }
+    
+    return nullptr;
 }
 
 ID3D11Texture2D* DX11GraphicsAPI::CreateTexture2D_internal(uint32_t width, uint32_t height, const GAPI_FORMAT::K format, uint32_t bindFlags)
@@ -682,8 +694,8 @@ std::shared_ptr<VertexShader> DX11GraphicsAPI::CreateVertexShader(const std::str
 
         if (!desc.empty())
         {
-            if (SUCCEEDED(m_device->CreateVertexShader(BinaryBlob, BinaryBlob->GetBufferSize(), nullptr, &ResultShader)) &&
-                SUCCEEDED(m_device->CreateInputLayout(desc.data(), desc.size(), BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), &resultLayout)))
+            if (SUCCEEDED(m_device->CreateVertexShader(BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), nullptr, &ResultShader)) &&
+                SUCCEEDED(m_device->CreateInputLayout(desc.data(), static_cast<UINT>(desc.size()), BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), &resultLayout)))
             {
                 p_VS = std::make_shared<Dx11VertexShader>();
                 p_VS->m_shader = ResultShader;
@@ -706,15 +718,19 @@ std::shared_ptr<PixelShader> DX11GraphicsAPI::CreatePixelShader(const std::strin
 
     if (BinaryBlob != nullptr)
     {
-        ID3D11PixelShader* shader = nullptr;
-        HRESULT hr = m_device->CreatePixelShader(BinaryBlob, BinaryBlob->GetBufferSize(), nullptr, &ResultShader);
-        assert(SUCCEEDED(hr));
-
-        auto shaderPtr = std::make_shared<Dx11PixelShader>();
-        shaderPtr->m_shader = ResultShader;
-
-        return shaderPtr;
+        HRESULT hr = m_device->CreatePixelShader(BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), nullptr, &ResultShader);
+        
+        SAFE_RELEASE(BinaryBlob);
+        
+        if (SUCCEEDED(hr))
+        {
+            auto shaderPtr = std::make_shared<Dx11PixelShader>();
+            shaderPtr->m_shader = ResultShader;
+            return shaderPtr;
+        }
     }
+    
+    return nullptr;
 }
 
 void DX11GraphicsAPI::SetVertexShader(std::weak_ptr<VertexShader> shader)
