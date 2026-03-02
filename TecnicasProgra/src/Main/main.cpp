@@ -50,6 +50,19 @@ int main()
 
     auto RTView = P_swapChain->GetRenderTargetView();
 
+    std::shared_ptr<DepthStencilView> depthStencilView = graphics->CreateDepthStencil(width, height, GAPI_FORMAT::FORMAT_D24_UNORM_S8_UINT);
+
+    struct ConstantBufferData
+    {
+        float a;
+        float b;
+        float c;
+        float d;
+    };
+    
+    ConstantBufferData cbData = { 1.0f, 2.0f, 3.0f, 4.0f };
+    std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(ConstantBufferData), 0, &cbData);
+
     VERTEX TriangleVertices[] =
     {
         {0.0f, 0.5f, 0.0f, 1.0f,  {1.0f, 0.0f, 0.0f, 1.0f} },
@@ -61,14 +74,19 @@ int main()
 
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
 
+    float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
+
     bool isAppRunning = true;
     while (isAppRunning)
     {
         window->processMessages();
         
-        graphics->ClearSwapChain(P_swapChain);
+        graphics->ClearRenderTargetView(RTView, clearColor);
         
-        graphics->SetRenderTargetView(RTView);
+        graphics->SetRenderTargetView(RTView, depthStencilView);
+        
+        graphics->SetConstantBuffer(constantBuffer);
+        
         graphics->SetTopology(p_topology);
         graphics->SetVertexShader(p_vertexShader);
         graphics->SetPixelShader(p_pixelShader);

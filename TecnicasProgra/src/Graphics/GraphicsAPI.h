@@ -36,8 +36,6 @@ public:
 		uint32_t height = 0,
 		GAPI_FORMAT::K = GAPI_FORMAT::FORMAT_UNKNOWN) = 0;
 
-	virtual void ClearSwapChain(std::weak_ptr<SwapChain> swapChain) = 0;
-
 	//const buffer
 	virtual std::shared_ptr<ConstantBuffer> CreateConstantBuffer(const uint32_t bytewidth = 0,
 		const uint32_t slot = 0,
@@ -84,7 +82,10 @@ public:
 	virtual std::shared_ptr<ViewPort> CreateViewPort(float width, float height, float minDepth, 
 		float maxDepth, float topLeftX, float topLeftY) = 0;
 
-	virtual void SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView) = 0;
+	//Render target view
+	virtual void SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView = std::weak_ptr<DepthStencilView>()) = 0;
+
+	virtual void ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4]) = 0;
 
 protected:
 	uint32_t m_shaderModel;

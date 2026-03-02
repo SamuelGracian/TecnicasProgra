@@ -523,20 +523,6 @@ std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<Displa
     return SChain;
 }
 
-void DX11GraphicsAPI::ClearSwapChain(std::weak_ptr<SwapChain> swapChain)
-{
-    float Color[4] = { 1,12,0,1 };
-
-    if (swapChain.expired())
-    {
-        std::cout << "Expired Swap Chain" << std::endl;
-        return;
-    }
-    std::shared_ptr<Dx11SwapChain> TempSwapChain = std::reinterpret_pointer_cast<Dx11SwapChain> (swapChain.lock());
-
-    m_immediateContext->ClearRenderTargetView(TempSwapChain->m_BackBufferRT, Color);
-}
-
 std::shared_ptr<ConstantBuffer> DX11GraphicsAPI::CreateConstantBuffer(const uint32_t bytewidth, const uint32_t slot, void* data)
 {
     assert(bytewidth != 0);
@@ -789,7 +775,37 @@ void DX11GraphicsAPI::Draw(uint32_t vertexCount, uint32_t startVertexLocation)
 
 std::shared_ptr<DepthStencilView> DX11GraphicsAPI::CreateDepthStencil(uint32_t width, uint32_t height, const GAPI_FORMAT::K format)
 {
-    return std::shared_ptr<DepthStencilView>();
+    if (width == 0 || height == 0 || format == GAPI_FORMAT::FORMAT_UNKNOWN)
+    {
+        std::cout << "Invalid parameters for DepthStencil creation" << std::endl;
+        return nullptr;
+    }
+
+    // Create the depth stencil texture
+    ID3D11Texture2D* depthStencilTexture = CreateTexture2D_internal(width, height, format, GAPI_BIND_FLAGS::DEPTH_STENCIL);
+
+    if (!depthStencilTexture)
+    {
+        std::cout << "Failed to create DepthStencil texture" << std::endl;
+        return nullptr;
+    }
+
+    // Create the depth stencil view
+    ID3D11DepthStencilView* depthStencilView = CreateDepthStencilView_internal(depthStencilTexture);
+
+    SAFE_RELEASE(depthStencilTexture);
+
+    if (!depthStencilView)
+    {
+        std::cout << "Failed to create DepthStencilView" << std::endl;
+        return nullptr;
+    }
+
+    // Wrap in our custom class
+    auto dsv = std::make_shared<Dx11DepthStencilView>();
+    dsv->m_depthStencilView = depthStencilView;
+
+    return dsv;
 }
 
 std::shared_ptr<ViewPort> DX11GraphicsAPI::CreateViewPort(float width, float height, float minDepth, float maxDepth, float topLeftX, float topLeftY)
@@ -797,18 +813,55 @@ std::shared_ptr<ViewPort> DX11GraphicsAPI::CreateViewPort(float width, float hei
     return std::shared_ptr<ViewPort>();
 }
 
-void DX11GraphicsAPI::SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView)
+void DX11GraphicsAPI::SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView)
 {
-    if (renderTargetView.expired())
+    if (m_immediateContext == nullptr)
     {
-        std::cout << "Expired render Target View" << std::endl;
+        std::cout << "Null immediate context" << std::endl;
         return;
     }
 
-    std::shared_ptr<Dx11RenderTargetView> Dx11RT = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
+    ID3D11RenderTargetView* rtv = nullptr;
+    ID3D11DepthStencilView* dsv = nullptr;
 
-    assert(Dx11RT->m_renderTargetView);
+    // Get RenderTargetView
+    if (!renderTargetView.expired())
+    {
+        std::shared_ptr<Dx11RenderTargetView> tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
+        if (tempRTV && tempRTV->m_renderTargetView)
+        {
+            rtv = tempRTV->m_renderTargetView;
+        }
+    }
 
-    m_immediateContext->OMSetRenderTargets(1, &Dx11RT->m_renderTargetView, nullptr);
+    // Get DepthStencilView
+    if (!depthStencilView.expired())
+    {
+        std::shared_ptr<Dx11DepthStencilView> tempDSV = std::reinterpret_pointer_cast<Dx11DepthStencilView>(depthStencilView.lock());
+        if (tempDSV && tempDSV->m_depthStencilView)
+        {
+            dsv = tempDSV->m_depthStencilView;
+        }
+    }
 
+    // Set both render target and depth stencil
+    m_immediateContext->OMSetRenderTargets(1, &rtv, dsv);
 }
+
+void DX11GraphicsAPI::ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4])
+{
+    if (renderTargetView.expired() || m_immediateContext == nullptr)
+    {
+        std::cout << "Expired RenderTargetView or null context" << std::endl;
+        return;
+    }
+
+    std::shared_ptr<Dx11RenderTargetView> tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
+
+    if (tempRTV && tempRTV->m_renderTargetView)
+    {
+        m_immediateContext->ClearRenderTargetView(tempRTV->m_renderTargetView, color);
+    }
+}
+
+

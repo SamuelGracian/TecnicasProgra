@@ -20,7 +20,6 @@ public:
   //Swap Chain
   std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow, uint32_t width, uint32_t height, GAPI_FORMAT::K format) override;
 
-  void ClearSwapChain(std::weak_ptr<SwapChain>swapChain) override;
 
 	//Buffers
 	
@@ -56,13 +55,20 @@ public:
 
  void Draw(uint32_t vertexCount, uint32_t startVertexLocation = 0)override;
 
+ //depth stencil
   std::shared_ptr<DepthStencilView> CreateDepthStencil(uint32_t width = 0, uint32_t height = 0,
 	  const GAPI_FORMAT::K format = GAPI_FORMAT::FORMAT_UNKNOWN)override;
 
+
+  //view port
   std::shared_ptr<ViewPort> CreateViewPort(float width, float height, float minDepth,
 	  float maxDepth, float topLeftX, float topLeftY)override;
 
-  void SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView) override;
+  //render target view
+  void SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView = std::weak_ptr<DepthStencilView>()) override;
+
+
+  void ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4]);
 
 private:
 
