@@ -227,7 +227,7 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
 
   UINT createDeviceFlags = 0;
 #ifdef _DEBUG
-  createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+  createDeviceFlags |= (D3D11_CREATE_DEVICE_DEBUG | D3D11_CREATE_DEVICE_DEBUGGABLE);
 #endif
 
   D3D_DRIVER_TYPE driverTypes[] =

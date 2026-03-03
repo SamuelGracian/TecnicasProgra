@@ -10,6 +10,14 @@ struct VERTEX
     float x, y, z, w;
     float Color[4] = { 1,12,0,1 };
 };
+
+struct ConstantBufferData
+{
+    float a;
+    float b;
+    float c;
+    float d;
+};
         
 std::vector<std::string> defines{ "#define TEST" };
 
@@ -52,14 +60,6 @@ int main()
 
     std::shared_ptr<DepthStencilView> depthStencilView = graphics->CreateDepthStencil(width, height, GAPI_FORMAT::FORMAT_D24_UNORM_S8_UINT);
 
-    struct ConstantBufferData
-    {
-        float a;
-        float b;
-        float c;
-        float d;
-    };
-    
     ConstantBufferData cbData = { 1.0f, 2.0f, 3.0f, 4.0f };
     std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(ConstantBufferData), 0, &cbData);
 
@@ -76,10 +76,19 @@ int main()
 
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
 
+    float DeltaTime = 0.0f;
     bool isAppRunning = true;
     while (isAppRunning)
     {
         window->processMessages();
+        
+        DeltaTime += 0.016f;
+        cbData.a = sin(DeltaTime);
+        cbData.b = cos(DeltaTime);
+        cbData.c = DeltaTime;
+        cbData.d = 1.0f;
+        
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(ConstantBufferData), &cbData);
         
         graphics->ClearRenderTargetView(RTView, clearColor);
         
