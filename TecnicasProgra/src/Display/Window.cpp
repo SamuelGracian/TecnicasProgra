@@ -25,6 +25,9 @@ DisplaySurface::~DisplaySurface()
 
 bool DisplaySurface::init(int width, int height, wchar_t* windowName)
 {
+    m_width = width;
+    m_height = height;
+
 #if defined(_WIN32)
   const char CLASS_NAME[] = "DX11WindowClass";
   WNDCLASSEX wc{};
@@ -43,7 +46,7 @@ bool DisplaySurface::init(int width, int height, wchar_t* windowName)
       WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 
       CW_USEDEFAULT, 
-      width, height,
+      m_width, m_height,
       nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
 
   if (!m_hwnd)

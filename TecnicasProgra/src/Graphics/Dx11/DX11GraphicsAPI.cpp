@@ -200,7 +200,7 @@ std::vector<D3D11_INPUT_ELEMENT_DESC> CreateInputLayoutDesc_internal(ID3DBlob* v
             inputLayoutDesc.push_back(elementDesc);
         }
 
-        reflection->Release();
+       SAFE_RELEASE (reflection)
     }
 
     return inputLayoutDesc;
@@ -230,76 +230,35 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
   createDeviceFlags |= (D3D11_CREATE_DEVICE_DEBUG | D3D11_CREATE_DEVICE_DEBUGGABLE);
 #endif
 
-  D3D_DRIVER_TYPE driverTypes[] =
+  std::vector <D3D_DRIVER_TYPE> driverTypes =
       {
           D3D_DRIVER_TYPE_HARDWARE,
           D3D_DRIVER_TYPE_WARP,
           D3D_DRIVER_TYPE_REFERENCE,
       };
-  UINT numDriverTypes = ARRAYSIZE(driverTypes);
 
-  D3D_FEATURE_LEVEL featureLevels[] =
+  std::vector <D3D_FEATURE_LEVEL> featureLevels =
       {
           D3D_FEATURE_LEVEL_11_1,
           D3D_FEATURE_LEVEL_11_0,
           D3D_FEATURE_LEVEL_10_1,
           D3D_FEATURE_LEVEL_10_0,
       };
-  UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
-  HRESULT hr = S_OK;
-  for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
+  D3D_FEATURE_LEVEL resultFeatureLevel;
+  
+  for ( const auto& drivertype: driverTypes )
   {
-    D3D_DRIVER_TYPE g_driverType = driverTypes[driverTypeIndex];
-    /// DELETE THIS
-    D3D_FEATURE_LEVEL g_featureLevel = D3D_FEATURE_LEVEL_11_0;
-
-    hr = D3D11CreateDevice(nullptr, g_driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
-                           D3D11_SDK_VERSION, &m_device, &g_featureLevel, &m_immediateContext);
-
-    if (hr == E_INVALIDARG)
+ 
+    if (SUCCEEDED(D3D11CreateDevice(nullptr, drivertype, nullptr, createDeviceFlags, featureLevels.data(), featureLevels.size(),
+        D3D11_SDK_VERSION, &m_device, &resultFeatureLevel , &m_immediateContext)))
     {
-      // DirectX 11.0 platforms will not recognize D3D_FEATURE_LEVEL_11_1 so we need to retry without it
-      hr = D3D11CreateDevice(nullptr, g_driverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
-                             D3D11_SDK_VERSION, &m_device, &g_featureLevel, &m_immediateContext);
+        return true;
     }
 
-    if (SUCCEEDED(hr))
-      break;
   }
-  assert(!FAILED(hr));
 
-  // Obtain DXGI factory from device (since we used nullptr for pAdapter above)
-  IDXGIFactory1 *dxgiFactory1 = nullptr;
-  {
-    IDXGIDevice *dxgiDevice = nullptr;
-    hr = m_device->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void **>(&dxgiDevice));
-    if (SUCCEEDED(hr))
-    {
-      IDXGIAdapter *adapter = nullptr;
-      hr = dxgiDevice->GetAdapter(&adapter);
-      if (SUCCEEDED(hr))
-      {
-        hr = adapter->GetParent(__uuidof(IDXGIFactory1), reinterpret_cast<void **>(&dxgiFactory1));
-        adapter->Release();
-      }
-      dxgiDevice->Release();
-    }
-  }
-  assert(!FAILED(hr));
-
-  D3D11_VIEWPORT viewport;
-
-  ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
-
-  viewport.TopLeftX = 0;
-  viewport.TopLeftY = 0;
-  viewport.Width = 800;
-  viewport.Height = 600;
-
-  m_immediateContext->RSSetViewports(1, &viewport);
-
-  return true;
+  return false;
 }
 
 void DX11GraphicsAPI::CleanUpResources()
@@ -399,14 +358,14 @@ ID3D11RenderTargetView* DX11GraphicsAPI::CreateBackBufferRT_internal(IDXGISwapCh
 
 ID3DBlob* DX11GraphicsAPI::CompileShader_internal(const std::string& shaderCode, const std::string& entrypoint, std::vector<std::string> Defines, SHADER_TYPE::K shaderType)
 {
+        ID3DBlob* ErrorBlob = nullptr;
+        ID3DBlob* BinaryBlob = nullptr;
 
     if (!shaderCode.empty() && !entrypoint.empty())
     {
 
         std::string FinalShaderCode;
 
-        ID3DBlob* ErrorBlob = nullptr;
-        ID3DBlob* BinaryBlob = nullptr;
 
         uint32_t dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
@@ -427,23 +386,18 @@ ID3DBlob* DX11GraphicsAPI::CompileShader_internal(const std::string& shaderCode,
 
         FinalShaderCode += shaderCode;
 
-        HRESULT hr = D3DCompile(FinalShaderCode.c_str(), FinalShaderCode.length(), nullptr, nullptr, nullptr,
-            entrypoint.c_str(), GetShaderModel_internal(shaderType, m_shaderModel), dwShaderFlags, 0, &BinaryBlob, &ErrorBlob);
-        
-        if (SUCCEEDED(hr))
+        if (FAILED(D3DCompile(FinalShaderCode.c_str(), FinalShaderCode.length(), nullptr, nullptr, nullptr,
+            entrypoint.c_str(), GetShaderModel_internal(shaderType, m_shaderModel), dwShaderFlags, 0, &BinaryBlob, &ErrorBlob)))
         {
-            SAFE_RELEASE(ErrorBlob);
-            return BinaryBlob;
-        }
-        
-        if (ErrorBlob)
-        {
-            std::cout << "Shader Compilation Error: " << reinterpret_cast<const char*>(ErrorBlob->GetBufferPointer()) << std::endl;
-            SAFE_RELEASE(ErrorBlob);
+            if (ErrorBlob)
+            {
+                std::cout << "Shader Compilation Error: " << reinterpret_cast<const char*>(ErrorBlob->GetBufferPointer()) << std::endl;
+            }
         }
     }
-    
-    return nullptr;
+
+    SAFE_RELEASE(ErrorBlob);
+    return BinaryBlob;
 }
 
 ID3D11Texture2D* DX11GraphicsAPI::CreateTexture2D_internal(uint32_t width, uint32_t height, const GAPI_FORMAT::K format, uint32_t bindFlags)
@@ -495,9 +449,9 @@ ID3D11DepthStencilView* DX11GraphicsAPI::CreateDepthStencilView_internal(ID3D11T
     return ResultDepthStencilView;
 }
 
-std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow, uint32_t width, uint32_t height, GAPI_FORMAT::K format)
+std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow, GAPI_FORMAT::K format)
 {
-    std::shared_ptr <SwapChain> SChain = nullptr;
+    std::shared_ptr <Dx11SwapChain> SChain = nullptr;
 
     if (handleWindow.expired())
     {
@@ -507,17 +461,15 @@ std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<Displa
 
     std::shared_ptr<DisplaySurface> tempSurface = handleWindow.lock();
 
-    if (auto* ResultSwapChain = CreateSwapChain_internal (tempSurface->GetHandle(), width, height, format))
+    if (auto* ResultSwapChain = CreateSwapChain_internal (tempSurface->GetHandle(),tempSurface->GetWidth(), tempSurface->GetWidth(), format))
     {
         if (auto* ResultRT = CreateBackBufferRT_internal(ResultSwapChain))
         {
             SChain = std::make_shared<Dx11SwapChain>();
 
-            std::shared_ptr<Dx11SwapChain> tempSwapChain = std::reinterpret_pointer_cast<Dx11SwapChain>(SChain);
+            SChain->m_BackBufferRT = ResultRT;
 
-            tempSwapChain->m_BackBufferRT = ResultRT;
-
-            tempSwapChain->m_swapChain = ResultSwapChain;
+            SChain->m_swapChain = ResultSwapChain;
         }
     }
     return SChain;
@@ -676,21 +628,21 @@ std::shared_ptr<VertexShader> DX11GraphicsAPI::CreateVertexShader(const std::str
 
     if (BinaryBlob != nullptr && m_device != nullptr)
     {
-        auto desc = CreateInputLayoutDesc_internal(BinaryBlob);
+        const auto desc = CreateInputLayoutDesc_internal(BinaryBlob);
 
         if (!desc.empty())
         {
             if (SUCCEEDED(m_device->CreateVertexShader(BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), nullptr, &ResultShader)) &&
-                SUCCEEDED(m_device->CreateInputLayout(desc.data(), static_cast<UINT>(desc.size()), BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), &resultLayout)))
+                SUCCEEDED(m_device->CreateInputLayout(desc.data(), desc.size(), BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), &resultLayout)))
             {
                 p_VS = std::make_shared<Dx11VertexShader>();
                 p_VS->m_shader = ResultShader;
                 p_VS->m_InputLayout = resultLayout;
             }
         }
-
-        SAFE_RELEASE(BinaryBlob);
     }
+
+    SAFE_RELEASE(BinaryBlob);
     return p_VS;
 }
 
@@ -700,23 +652,20 @@ std::shared_ptr<PixelShader> DX11GraphicsAPI::CreatePixelShader(const std::strin
 
     ID3D11PixelShader* ResultShader = nullptr;
 
+    std::shared_ptr<Dx11PixelShader> shaderPtr = nullptr;
+
     BinaryBlob = CompileShader_internal(shaderCode, entrypoint, Defines, SHADER_TYPE::K::PIXEL_SHADER);
 
     if (BinaryBlob != nullptr)
     {
-        HRESULT hr = m_device->CreatePixelShader(BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), nullptr, &ResultShader);
-        
-        SAFE_RELEASE(BinaryBlob);
-        
-        if (SUCCEEDED(hr))
-        {
-            auto shaderPtr = std::make_shared<Dx11PixelShader>();
-            shaderPtr->m_shader = ResultShader;
-            return shaderPtr;
-        }
+      if (SUCCEEDED( m_device->CreatePixelShader(BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), nullptr, &ResultShader)))
+      {
+        shaderPtr = std::make_shared<Dx11PixelShader>();
+        shaderPtr->m_shader = ResultShader;
+      }
     }
-    
-    return nullptr;
+    SAFE_RELEASE(BinaryBlob);
+    return shaderPtr;
 }
 
 void DX11GraphicsAPI::SetVertexShader(std::weak_ptr<VertexShader> shader)

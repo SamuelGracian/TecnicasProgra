@@ -32,8 +32,7 @@ public:
 	virtual void CleanUpResources() = 0;
 
 	//Swap Chain
-	virtual std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow,uint32_t width = 0,
-		uint32_t height = 0,
+	virtual std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow,
 		GAPI_FORMAT::K = GAPI_FORMAT::FORMAT_UNKNOWN) = 0;
 
 	//const buffer

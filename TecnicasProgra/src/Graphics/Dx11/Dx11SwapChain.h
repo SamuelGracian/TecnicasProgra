@@ -15,7 +15,7 @@ public:
 
 	void Present(uint32_t SyncInterval, uint32_t Flags)  override;
 
-	std::shared_ptr<RenderTargetView> GetRenderTargetView () const override;
+	std::shared_ptr<RenderTargetView> GetRenderTargetView () override;
 			 
 	IDXGISwapChain* m_swapChain;
 

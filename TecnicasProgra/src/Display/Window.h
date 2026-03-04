@@ -8,12 +8,23 @@
 class DisplaySurface 
 {
  public:
-  DisplaySurface() = default;
+	DisplaySurface() 
+		: m_width(0)
+		, m_height(0)
+#if defined (_WIN32)
+		,m_hwnd (nullptr)
+#endif
+	{}
+
   ~DisplaySurface();
 
   bool init(int width, int height, wchar_t* windowName);
 
   void processMessages();
+
+  int GetHeight() const { return m_height; }
+
+  int GetWidth() const { return m_width; }
 
 #if defined (_WIN32)
 
@@ -21,7 +32,7 @@ class DisplaySurface
 #endif
 
  private:
-
+	int m_width, m_height;
 #if defined(_WIN32)
   HWND m_hwnd;
 #endif

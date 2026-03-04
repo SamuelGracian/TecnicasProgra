@@ -50,7 +50,7 @@ int main()
     std::shared_ptr<GRAPI> graphics = std::make_shared<DX11GraphicsAPI>();
     graphics->Init(window);
 
-    std::shared_ptr<SwapChain> P_swapChain = graphics->CreateSwapChain(window, width, height, GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
+    std::shared_ptr<SwapChain> P_swapChain = graphics->CreateSwapChain(window, GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
 
     std::shared_ptr<VertexShader> p_vertexShader = graphics->CreateVertexShader(ReadFileToString(L"Shaders/Shaders.fxh"), "VShader", defines);
     

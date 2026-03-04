@@ -1,23 +1,29 @@
-struct VOut
+struct VSIn
 {
-    float4 position : SV_POSITION;
-    float4 color : COLOR;
+    float4 position : POSITION0;
+    float4 color : COLOR0;
 };
 
-VOut VShader(float4 position : POSITION, float4 color : COLOR)
+struct PSIn
 {
-    VOut output;
+    float4 position : SV_POSITION;
+    float4 color : COLOR0;
+};
 
-    output.position = position;
-    output.color = color;
+PSIn VShader(VSIn input)
+{
+    PSIn output;
+
+    output.position = input.position;
+    output.color = input.color;
 
     return output;
 }
 
 
-float4 PShader(float4 position : SV_POSITION, float4 color : COLOR) : SV_TARGET
+float4 PShader(PSIn input) : SV_TARGET0
 {
-    return color;
+    return input.color;
 }
 
 cbuffer GAPIConstBuffer : register(b0)

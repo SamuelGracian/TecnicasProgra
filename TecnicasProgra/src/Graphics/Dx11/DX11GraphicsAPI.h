@@ -18,7 +18,7 @@ public:
   void CleanUpResources() override;
   
   //Swap Chain
-  std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow, uint32_t width, uint32_t height, GAPI_FORMAT::K format) override;
+  std::shared_ptr<SwapChain> CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow, GAPI_FORMAT::K format) override;
 
 
 	//Buffers
