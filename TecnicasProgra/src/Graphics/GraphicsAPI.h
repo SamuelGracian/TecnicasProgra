@@ -86,6 +86,8 @@ public:
 
 	virtual void ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4]) = 0;
 
+	virtual void ClearDepthStencilView(std::weak_ptr<DepthStencilView>depthStencil, DepthStencilView::ClearFlags flag , float depth, uint32_t stencil) = 0;
+
 protected:
 	uint32_t m_shaderModel;
 

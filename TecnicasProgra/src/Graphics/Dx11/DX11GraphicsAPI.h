@@ -70,6 +70,8 @@ public:
 
   void ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4]);
 
+  void ClearDepthStencilView(std::weak_ptr<DepthStencilView>depthStencil, DepthStencilView::ClearFlags flag , float depth, uint32_t stencil) override;
+
 private:
 
 	// Internal functions

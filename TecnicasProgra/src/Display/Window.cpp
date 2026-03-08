@@ -40,6 +40,7 @@ bool DisplaySurface::init(int width, int height, wchar_t* windowName)
   RegisterClassEx(&wc);
 
   m_hwnd = CreateWindowEx(
+    
       0,
       CLASS_NAME,
       "Tecnias Progra",
@@ -76,3 +77,4 @@ void DisplaySurface::processMessages()
   }
 #endif
 }
+

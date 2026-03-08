@@ -200,7 +200,7 @@ std::vector<D3D11_INPUT_ELEMENT_DESC> CreateInputLayoutDesc_internal(ID3DBlob* v
             inputLayoutDesc.push_back(elementDesc);
         }
 
-       SAFE_RELEASE (reflection)
+       //SAFE_RELEASE (reflection)
     }
 
     return inputLayoutDesc;
@@ -253,6 +253,17 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
     if (SUCCEEDED(D3D11CreateDevice(nullptr, drivertype, nullptr, createDeviceFlags, featureLevels.data(), featureLevels.size(),
         D3D11_SDK_VERSION, &m_device, &resultFeatureLevel , &m_immediateContext)))
     {
+
+        D3D11_VIEWPORT viewport;
+        ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+
+        viewport.TopLeftX = 0;
+        viewport.TopLeftY = 0;
+        viewport.Width = window->GetWidth();
+        viewport.Height = window->GetHeight();
+
+        m_immediateContext->RSSetViewports(1, &viewport);
+
         return true;
     }
 
@@ -461,7 +472,7 @@ std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<Displa
 
     std::shared_ptr<DisplaySurface> tempSurface = handleWindow.lock();
 
-    if (auto* ResultSwapChain = CreateSwapChain_internal (tempSurface->GetHandle(),tempSurface->GetWidth(), tempSurface->GetWidth(), format))
+    if (auto* ResultSwapChain = CreateSwapChain_internal (tempSurface->GetHandle(),tempSurface->GetWidth(), tempSurface->GetHeight(), format))
     {
         if (auto* ResultRT = CreateBackBufferRT_internal(ResultSwapChain))
         {
@@ -485,15 +496,18 @@ std::shared_ptr<ConstantBuffer> DX11GraphicsAPI::CreateConstantBuffer(const uint
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
 
-    assert(!FAILED(m_device->CreateBuffer(&bd, nullptr, &Rawbuffer)));
+    if (SUCCEEDED( (m_device->CreateBuffer(&bd, nullptr, &Rawbuffer))))
 
-    auto buffer = std::make_shared<Dx11ConstantBuffer>();
-    buffer->m_buffer = Rawbuffer;
-    buffer->SetByteWidth(bytewidth);
-    buffer->SetSlot(slot);
+    {
+        auto buffer = std::make_shared<Dx11ConstantBuffer>();
+        buffer->m_buffer = Rawbuffer;
+        buffer->SetByteWidth(bytewidth);
+        buffer->SetSlot(slot);
 
-    ASSIGN_DEBUG_NAME(buffer.get(), Rawbuffer);
-    return buffer;
+        ASSIGN_DEBUG_NAME(buffer.get(), Rawbuffer);
+        return buffer;
+    }
+    return nullptr;
 }
 
 std::shared_ptr<IndexBuffer> DX11GraphicsAPI::CreateIndexBuffer(const uint32_t bytewidth, void* data, uint32_t indexcount)
@@ -502,6 +516,7 @@ std::shared_ptr<IndexBuffer> DX11GraphicsAPI::CreateIndexBuffer(const uint32_t b
     D3D11_BUFFER_DESC bd = {};
     ID3D11Buffer* Rawbuffer = nullptr;
     D3D11_SUBRESOURCE_DATA InitData = {};
+    auto ResultBuffer = std::make_shared<Dx11IndexBuffer>();
 
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = bytewidth;
@@ -509,11 +524,12 @@ std::shared_ptr<IndexBuffer> DX11GraphicsAPI::CreateIndexBuffer(const uint32_t b
     bd.CPUAccessFlags = 0;
     InitData.pSysMem = data;
 
-    assert(!FAILED(m_device->CreateBuffer(&bd, &InitData, &Rawbuffer)));
+    if (SUCCEEDED( m_device->CreateBuffer(&bd, &InitData, &Rawbuffer)))
+    {
+        ResultBuffer->m_buffer = Rawbuffer;
+    }
 
-    auto buffer = std::make_shared<Dx11IndexBuffer>();
-    buffer->m_buffer = Rawbuffer;
-    return buffer;
+    return ResultBuffer;
 }
 
 std::shared_ptr<VertexBuffer> DX11GraphicsAPI::CreateVertexBuffer(const uint32_t bytewidth, const void* vertices)
@@ -799,11 +815,13 @@ void DX11GraphicsAPI::SetRenderTargetView(std::weak_ptr<RenderTargetView> render
 
 void DX11GraphicsAPI::ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4])
 {
-    if (renderTargetView.expired() || m_immediateContext == nullptr)
+    if (renderTargetView.expired() || m_immediateContext == nullptr )
     {
         std::cout << "Expired RenderTargetView or null context" << std::endl;
         return;
     }
+
+
 
     std::shared_ptr<Dx11RenderTargetView> tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
 
@@ -811,6 +829,25 @@ void DX11GraphicsAPI::ClearRenderTargetView(std::weak_ptr<RenderTargetView> rend
     {
         m_immediateContext->ClearRenderTargetView(tempRTV->m_renderTargetView, color);
     }
+}
+
+void DX11GraphicsAPI::ClearDepthStencilView(std::weak_ptr<DepthStencilView> depthStencil, DepthStencilView::ClearFlags flag , float depth, uint32_t stencil)
+{
+    if (depthStencil.expired() || m_immediateContext == nullptr)
+    {
+        std::cout << "Expired Depth Stencil View" << std::endl;
+        return;
+    }
+
+    std::shared_ptr<Dx11DepthStencilView> tempDS = std::reinterpret_pointer_cast<Dx11DepthStencilView>(depthStencil.lock());
+
+    if (tempDS && m_immediateContext)
+    {
+        UINT  Dx11flag = Dx11DepthStencilView::GetClearFlagDx11(flag);
+
+        m_immediateContext->ClearDepthStencilView(tempDS->m_depthStencilView, Dx11flag, depth, stencil);
+    }
+
 }
 
 

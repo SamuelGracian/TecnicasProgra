@@ -76,6 +76,8 @@ int main()
 
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
 
+    uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
+
     float DeltaTime = 0.0f;
     bool isAppRunning = true;
     while (isAppRunning)
@@ -91,9 +93,11 @@ int main()
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(ConstantBufferData), &cbData);
         
         graphics->ClearRenderTargetView(RTView, clearColor);
+
+        graphics->ClearDepthStencilView(depthStencilView,static_cast <DepthStencilView::ClearFlags>(  Flag ), 1.0f, 0);
         
         graphics->SetRenderTargetView(RTView, depthStencilView);
-        
+
         graphics->SetConstantBuffer(constantBuffer);
         
         graphics->SetTopology(p_topology);
