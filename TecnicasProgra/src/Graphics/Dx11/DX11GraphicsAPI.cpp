@@ -6,6 +6,7 @@
 #include <d3dcompiler.h>
 #include <vector>
 #include <string>
+#include <map>
 
 #include "Graphics/Dx11/Dx11SwapChain.h"
 #include "Graphics/Dx11/Dx11ConstantBuffer.h"
@@ -113,7 +114,6 @@ const char* GetShaderModel_internal(SHADER_TYPE::K shaderType, uint32_t shaderMo
     return ResultShader.c_str();
 }
 
-
 namespace Dx11HELPERS
 {
     DXGI_FORMAT GetDX11Format_internal(const GAPI_FORMAT::K format)
@@ -134,22 +134,12 @@ namespace Dx11HELPERS
     }
 }
 
-std::vector<D3D11_INPUT_ELEMENT_DESC> CreateInputLayoutDesc_internal(ID3DBlob* vertexShaderBlob)
+std::vector<D3D11_INPUT_ELEMENT_DESC> CreateInputLayoutDesc_internal(ID3D11ShaderReflection* reflection)
 {
+    
     std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayoutDesc;
-    ID3D11ShaderReflection* reflection = nullptr;
 
-    if (!vertexShaderBlob)
-    {
-        std::cout << "Empty VertexShader blob" << std::endl;
-        return inputLayoutDesc;  // Return empty vector
-    }
-
-    if (SUCCEEDED(D3DReflect(
-        vertexShaderBlob->GetBufferPointer(),
-        vertexShaderBlob->GetBufferSize(),
-        IID_ID3D11ShaderReflection,
-        (void**)&reflection)))
+    if (reflection)
     {
         D3D11_SHADER_DESC shaderDesc;
         reflection->GetDesc(&shaderDesc);
@@ -199,10 +189,7 @@ std::vector<D3D11_INPUT_ELEMENT_DESC> CreateInputLayoutDesc_internal(ID3DBlob* v
 
             inputLayoutDesc.push_back(elementDesc);
         }
-
-       //SAFE_RELEASE (reflection)
     }
-
     return inputLayoutDesc;
 }
 
@@ -413,52 +400,29 @@ ID3DBlob* DX11GraphicsAPI::CompileShader_internal(const std::string& shaderCode,
 
 ID3D11Texture2D* DX11GraphicsAPI::CreateTexture2D_internal(uint32_t width, uint32_t height, const GAPI_FORMAT::K format, uint32_t bindFlags)
 {
-    assert(width != 0 && height != 0 && format != GAPI_FORMAT::FORMAT_UNKNOWN);
-
-    // Describe the depth-stencil texture
-    D3D11_TEXTURE2D_DESC descTexture = {};
-    descTexture.Width = width;
-    descTexture.Height = height;
-    descTexture.MipLevels = 1;
-    descTexture.ArraySize = 1;
-    descTexture.Format = GetDX11Format_internal(format);
-    descTexture.SampleDesc.Count = 1;
-    descTexture.SampleDesc.Quality = 0;
-    descTexture.Usage = D3D11_USAGE_DEFAULT;
-    descTexture.BindFlags = GetDx11BindFlag_internal(bindFlags);
-    descTexture.CPUAccessFlags = 0;
-    descTexture.MiscFlags = 0;
-
     ID3D11Texture2D* ResultTexture = nullptr;
-    m_device->CreateTexture2D(&descTexture, nullptr, &ResultTexture);
+   if (width != 0 && height != 0 && format != GAPI_FORMAT::FORMAT_UNKNOWN && m_device == nullptr)
+   {
+       // Describe the depth-stencil texture
+       D3D11_TEXTURE2D_DESC descTexture = {};
+       descTexture.Width = width;
+       descTexture.Height = height;
+       descTexture.MipLevels = 1;
+       descTexture.ArraySize = 1;
+       descTexture.Format = GetDX11Format_internal(format);
+       descTexture.SampleDesc.Count = 1;
+       descTexture.SampleDesc.Quality = 0;
+       descTexture.Usage = D3D11_USAGE_DEFAULT;
+       descTexture.BindFlags = GetDx11BindFlag_internal(bindFlags);
+       descTexture.CPUAccessFlags = 0;
+       descTexture.MiscFlags = 0;
+       m_device->CreateTexture2D(&descTexture, nullptr, &ResultTexture);
+   }
 
     return ResultTexture;
 }
 
-ID3D11DepthStencilView* DX11GraphicsAPI::CreateDepthStencilView_internal(ID3D11Texture2D* texture)
-{
-    D3D11_TEXTURE2D_DESC TextureDesc = {};
 
-    ID3D11DepthStencilView* ResultDepthStencilView = nullptr;
-
-    if (texture != nullptr)
-    {
-        texture->GetDesc(&TextureDesc);
-
-        if ((TextureDesc.BindFlags & D3D11_BIND_FLAG::D3D11_BIND_DEPTH_STENCIL) != 0)
-        {
-            D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
-            descDSV.Format = TextureDesc.Format;
-            descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-            descDSV.Texture2D.MipSlice = 0;
-
-            m_device->CreateDepthStencilView(texture, &descDSV, &ResultDepthStencilView);
-        }
-    }
-
-    // Wrap the raw D3D resource into the Dx11 depth-stencil object (same pattern as buffer creators)
-    return ResultDepthStencilView;
-}
 
 std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<DisplaySurface> handleWindow, GAPI_FORMAT::K format)
 {
@@ -472,7 +436,7 @@ std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<Displa
 
     std::shared_ptr<DisplaySurface> tempSurface = handleWindow.lock();
 
-    if (auto* ResultSwapChain = CreateSwapChain_internal (tempSurface->GetHandle(),tempSurface->GetWidth(), tempSurface->GetHeight(), format))
+    if (auto* ResultSwapChain = CreateSwapChain_internal (tempSurface->GetHandle(),tempSurface->GetClientWidth(), tempSurface->GetClientHeight(), format))
     {
         if (auto* ResultRT = CreateBackBufferRT_internal(ResultSwapChain))
         {
@@ -488,13 +452,15 @@ std::shared_ptr<SwapChain> DX11GraphicsAPI::CreateSwapChain(std::weak_ptr<Displa
 
 std::shared_ptr<ConstantBuffer> DX11GraphicsAPI::CreateConstantBuffer(const uint32_t bytewidth, const uint32_t slot, void* data)
 {
-    assert(bytewidth != 0);
     ID3D11Buffer* Rawbuffer = nullptr;
     D3D11_BUFFER_DESC bd = {};
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = bytewidth;
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
+    if (bytewidth != 0)
+    {
+        bd.Usage = D3D11_USAGE_DEFAULT;
+        bd.ByteWidth = bytewidth;
+        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        bd.CPUAccessFlags = 0;
+    }
 
     if (SUCCEEDED( (m_device->CreateBuffer(&bd, nullptr, &Rawbuffer))))
 
@@ -535,6 +501,7 @@ std::shared_ptr<IndexBuffer> DX11GraphicsAPI::CreateIndexBuffer(const uint32_t b
 std::shared_ptr<VertexBuffer> DX11GraphicsAPI::CreateVertexBuffer(const uint32_t bytewidth, const void* vertices)
 {
     ID3D11Buffer* Rawbuffer = nullptr;
+    std::shared_ptr<Dx11VertexBuffer> ResultBuffer;
 
     D3D11_BUFFER_DESC bd = {};
     bd.Usage = D3D11_USAGE_DEFAULT;
@@ -545,11 +512,12 @@ std::shared_ptr<VertexBuffer> DX11GraphicsAPI::CreateVertexBuffer(const uint32_t
     D3D11_SUBRESOURCE_DATA InitData = {};
     InitData.pSysMem = vertices;
 
-    assert(!FAILED(m_device->CreateBuffer(&bd, &InitData, &Rawbuffer)));
-
-    auto buffer = std::make_shared<Dx11VertexBuffer>();
-    buffer->m_buffer = Rawbuffer;
-    return buffer;
+   if (SUCCEEDED(m_device->CreateBuffer(&bd, &InitData, &Rawbuffer)))
+   {
+       ResultBuffer = std::make_shared<Dx11VertexBuffer>();
+       ResultBuffer->m_buffer = Rawbuffer;
+   }
+    return ResultBuffer;
 }
 
 void DX11GraphicsAPI::SetConstantBuffer(std::weak_ptr<ConstantBuffer> buffer)
@@ -638,26 +606,36 @@ std::shared_ptr<VertexShader> DX11GraphicsAPI::CreateVertexShader(const std::str
 
     ID3D11InputLayout* resultLayout = nullptr;
 
+    ID3D11ShaderReflection* shaderReflection = nullptr;
+
     BinaryBlob = CompileShader_internal(shaderCode, entrypoint, Defines, SHADER_TYPE::K::VERTEX_SHADER);
 
     std::shared_ptr<Dx11VertexShader> p_VS = nullptr;
 
     if (BinaryBlob != nullptr && m_device != nullptr)
     {
-        const auto desc = CreateInputLayoutDesc_internal(BinaryBlob);
-
-        if (!desc.empty())
+        if (SUCCEEDED(D3DReflect(
+            BinaryBlob->GetBufferPointer(),
+            BinaryBlob->GetBufferSize(),
+            IID_ID3D11ShaderReflection,
+            (void**)&shaderReflection)))
         {
-            if (SUCCEEDED(m_device->CreateVertexShader(BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), nullptr, &ResultShader)) &&
-                SUCCEEDED(m_device->CreateInputLayout(desc.data(), desc.size(), BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), &resultLayout)))
+            
+            const auto desc = CreateInputLayoutDesc_internal(shaderReflection);
+
+            if (!desc.empty())
             {
-                p_VS = std::make_shared<Dx11VertexShader>();
-                p_VS->m_shader = ResultShader;
-                p_VS->m_InputLayout = resultLayout;
+                if (SUCCEEDED(m_device->CreateVertexShader(BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), nullptr, &ResultShader)) &&
+                    SUCCEEDED(m_device->CreateInputLayout(desc.data(), desc.size(), BinaryBlob->GetBufferPointer(), BinaryBlob->GetBufferSize(), &resultLayout)))
+                {
+                    p_VS = std::make_shared<Dx11VertexShader>();
+                    p_VS->m_shader = ResultShader;
+                    p_VS->m_InputLayout = resultLayout;
+                }
             }
         }
     }
-
+    SAFE_RELEASE (shaderReflection)
     SAFE_RELEASE(BinaryBlob);
     return p_VS;
 }
@@ -740,37 +718,32 @@ void DX11GraphicsAPI::Draw(uint32_t vertexCount, uint32_t startVertexLocation)
 
 std::shared_ptr<DepthStencilView> DX11GraphicsAPI::CreateDepthStencil(uint32_t width, uint32_t height, const GAPI_FORMAT::K format)
 {
-    if (width == 0 || height == 0 || format == GAPI_FORMAT::FORMAT_UNKNOWN)
+    std::shared_ptr<Dx11DepthStencilView>resultDepthStencil = nullptr;
+    ID3D11DepthStencilView* ResultDepthStencilView = nullptr;
+    ID3D11Texture2D* depthStencilTexture = nullptr;
+
+    if (m_device!= nullptr || width != 0 || height != 0 || format != GAPI_FORMAT::FORMAT_UNKNOWN)
     {
-        std::cout << "Invalid parameters for DepthStencil creation" << std::endl;
-        return nullptr;
+        // Create the depth stencil texture
+       
+       if (depthStencilTexture = CreateTexture2D_internal(width, height, format, GAPI_BIND_FLAGS::DEPTH_STENCIL))
+
+       {
+         D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
+         descDSV.Format = GetDX11Format_internal(format);
+         descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+         descDSV.Texture2D.MipSlice = 0;
+
+         if (m_device->CreateDepthStencilView(depthStencilTexture, &descDSV, &ResultDepthStencilView))    
+         {
+             resultDepthStencil = std::make_shared <Dx11DepthStencilView>();
+             // Wrap in our custom class
+             resultDepthStencil->m_depthStencilView = ResultDepthStencilView;
+         }
+       }
     }
-
-    // Create the depth stencil texture
-    ID3D11Texture2D* depthStencilTexture = CreateTexture2D_internal(width, height, format, GAPI_BIND_FLAGS::DEPTH_STENCIL);
-
-    if (!depthStencilTexture)
-    {
-        std::cout << "Failed to create DepthStencil texture" << std::endl;
-        return nullptr;
-    }
-
-    // Create the depth stencil view
-    ID3D11DepthStencilView* depthStencilView = CreateDepthStencilView_internal(depthStencilTexture);
-
     SAFE_RELEASE(depthStencilTexture);
-
-    if (!depthStencilView)
-    {
-        std::cout << "Failed to create DepthStencilView" << std::endl;
-        return nullptr;
-    }
-
-    // Wrap in our custom class
-    auto dsv = std::make_shared<Dx11DepthStencilView>();
-    dsv->m_depthStencilView = depthStencilView;
-
-    return dsv;
+    return resultDepthStencil;
 }
 
 std::shared_ptr<ViewPort> DX11GraphicsAPI::CreateViewPort(float width, float height, float minDepth, float maxDepth, float topLeftX, float topLeftY)

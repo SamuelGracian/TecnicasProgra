@@ -29,6 +29,11 @@ bool DisplaySurface::init(int width, int height, wchar_t* windowName)
     m_height = height;
 
 #if defined(_WIN32)
+    RECT rc;
+    GetClientRect(m_hwnd, &rc);
+    m_clientWidth = rc.right - rc.left;
+    m_clientHeight = rc.bottom - rc.top;
+
   const char CLASS_NAME[] = "DX11WindowClass";
   WNDCLASSEX wc{};
   wc.cbSize = sizeof(wc);

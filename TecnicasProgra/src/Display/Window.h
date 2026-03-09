@@ -26,6 +26,10 @@ class DisplaySurface
 
   int GetWidth() const { return m_width; }
 
+  int GetClientWidth()  const { return m_clientWidth; }
+
+  int GetClientHeight() const { return m_clientHeight; }
+
 #if defined (_WIN32)
 
   inline HWND GetHandle() const { return m_hwnd; }
@@ -33,6 +37,7 @@ class DisplaySurface
 
  private:
 	int m_width, m_height;
+	int m_clientWidth, m_clientHeight;
 #if defined(_WIN32)
   HWND m_hwnd;
 #endif

@@ -58,7 +58,7 @@ int main()
 
     auto RTView = P_swapChain->GetRenderTargetView();
 
-    std::shared_ptr<DepthStencilView> depthStencilView = graphics->CreateDepthStencil(width, height, GAPI_FORMAT::FORMAT_D24_UNORM_S8_UINT);
+    std::shared_ptr<DepthStencilView> depthStencilView = graphics->CreateDepthStencil(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_D24_UNORM_S8_UINT);
 
     ConstantBufferData cbData = { 1.0f, 2.0f, 3.0f, 4.0f };
     std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(ConstantBufferData), 0, &cbData);
