@@ -401,9 +401,9 @@ ID3DBlob* DX11GraphicsAPI::CompileShader_internal(const std::string& shaderCode,
 ID3D11Texture2D* DX11GraphicsAPI::CreateTexture2D_internal(uint32_t width, uint32_t height, const GAPI_FORMAT::K format, uint32_t bindFlags)
 {
     ID3D11Texture2D* ResultTexture = nullptr;
-   if (width != 0 && height != 0 && format != GAPI_FORMAT::FORMAT_UNKNOWN && m_device == nullptr)
+   if (width != 0 && height != 0 && format != GAPI_FORMAT::FORMAT_UNKNOWN && m_device != nullptr)
    {
-       // Describe the depth-stencil texture
+
        D3D11_TEXTURE2D_DESC descTexture = {};
        descTexture.Width = width;
        descTexture.Height = height;
@@ -722,22 +722,19 @@ std::shared_ptr<DepthStencilView> DX11GraphicsAPI::CreateDepthStencil(uint32_t w
     ID3D11DepthStencilView* ResultDepthStencilView = nullptr;
     ID3D11Texture2D* depthStencilTexture = nullptr;
 
-    if (m_device!= nullptr || width != 0 || height != 0 || format != GAPI_FORMAT::FORMAT_UNKNOWN)
+    if (m_device != nullptr && width != 0 && height != 0 && format != GAPI_FORMAT::FORMAT_UNKNOWN)
     {
-        // Create the depth stencil texture
        
        if (depthStencilTexture = CreateTexture2D_internal(width, height, format, GAPI_BIND_FLAGS::DEPTH_STENCIL))
-
        {
          D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
          descDSV.Format = GetDX11Format_internal(format);
          descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
          descDSV.Texture2D.MipSlice = 0;
 
-         if (m_device->CreateDepthStencilView(depthStencilTexture, &descDSV, &ResultDepthStencilView))    
+         if (SUCCEEDED(m_device->CreateDepthStencilView(depthStencilTexture, &descDSV, &ResultDepthStencilView)))    
          {
-             resultDepthStencil = std::make_shared <Dx11DepthStencilView>();
-             // Wrap in our custom class
+             resultDepthStencil = std::make_shared<Dx11DepthStencilView>();
              resultDepthStencil->m_depthStencilView = ResultDepthStencilView;
          }
        }
@@ -822,5 +819,3 @@ void DX11GraphicsAPI::ClearDepthStencilView(std::weak_ptr<DepthStencilView> dept
     }
 
 }
-
-

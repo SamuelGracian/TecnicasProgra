@@ -29,11 +29,6 @@ bool DisplaySurface::init(int width, int height, wchar_t* windowName)
     m_height = height;
 
 #if defined(_WIN32)
-    RECT rc;
-    GetClientRect(m_hwnd, &rc);
-    m_clientWidth = rc.right - rc.left;
-    m_clientHeight = rc.bottom - rc.top;
-
   const char CLASS_NAME[] = "DX11WindowClass";
   WNDCLASSEX wc{};
   wc.cbSize = sizeof(wc);
@@ -45,10 +40,9 @@ bool DisplaySurface::init(int width, int height, wchar_t* windowName)
   RegisterClassEx(&wc);
 
   m_hwnd = CreateWindowEx(
-    
       0,
       CLASS_NAME,
-      "Tecnias Progra",
+      "Tecnicas Progra",
       WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 
       CW_USEDEFAULT, 
@@ -58,9 +52,13 @@ bool DisplaySurface::init(int width, int height, wchar_t* windowName)
   if (!m_hwnd)
   {
     std::cout << "Window could not be created" << std::endl;
-
     return false;
   }
+
+  RECT rc;
+  GetClientRect(m_hwnd, &rc);
+  m_clientWidth = rc.right - rc.left;
+  m_clientHeight = rc.bottom - rc.top;
 
   ShowWindow(m_hwnd, SW_SHOW);
   UpdateWindow(m_hwnd);
