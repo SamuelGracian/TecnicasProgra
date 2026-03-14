@@ -19,3 +19,9 @@ endforeach()
 list(REMOVE_DUPLICATES INCLUDE_DIRS)
 
 target_include_directories(Graphics PRIVATE ${INCLUDE_DIRS})
+
+add_custom_command(TARGET Graphics POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_SOURCE_DIR}/RawData/Shaders"
+    "$<TARGET_FILE_DIR:Graphics>/Shaders"
+)

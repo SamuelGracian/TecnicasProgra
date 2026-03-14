@@ -10,17 +10,17 @@ struct VERTEX
     float Color[4] = { 1,12,0,1 };
 };
 
-struct ConstantBufferData
-{
-    float a;
-    float b;
-    float c;
-    float d;
-};
+//struct ConstantBufferData
+//{
+//    float a;
+//    float b;
+//    float c;
+//    float d;
+//};
 
 struct MoveVertex 
 {
-    float  cos, amplitude, c, d;
+    float  cosValue, amplitude, c, d;
 };
         
 std::vector<std::string> defines{ "#define TEST" };
@@ -62,8 +62,8 @@ int main()
 
     std::shared_ptr<DepthStencilView> depthStencilView = graphics->CreateDepthStencil(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_D24_UNORM_S8_UINT);
 
-    float amplitude = 0.5f;
-    MoveVertex moveData = { 0.0f, amplitude, 0.0f, 0.0f };
+    float amplitude = 0.5f; 
+    MoveVertex moveData = { 1.0f, amplitude, 1.0f, 1.0f };
     std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(MoveVertex), 0, &moveData);
 
     VERTEX TriangleVertices[] =
@@ -95,7 +95,7 @@ int main()
         float deltaTime = elapsed.count();
         time += deltaTime;
 
-        moveData.cos = std::cos(time);
+        moveData.cosValue = std::cos(time);
         moveData.amplitude = amplitude;
         
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(MoveVertex), &moveData);
