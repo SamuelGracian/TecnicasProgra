@@ -1,4 +1,3 @@
-
 file(GLOB_RECURSE SOURCE_FILES 
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" 
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
@@ -22,6 +21,6 @@ target_include_directories(Graphics PRIVATE ${INCLUDE_DIRS})
 
 add_custom_command(TARGET Graphics POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_SOURCE_DIR}/RawData/Shaders"
+    "${CMAKE_CURRENT_SOURCE_DIR}/RawData/Shaders"
     "$<TARGET_FILE_DIR:Graphics>/Shaders"
 )
