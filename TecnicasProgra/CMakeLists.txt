@@ -9,6 +9,8 @@ file(GLOB_RECURSE ALL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*")
 
 set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+set(MATHFU_PATH "D:/DEV/Devlibs/mathfu")
+
 foreach(FILE_PATH ${ALL_FILES})
     if(IS_DIRECTORY "${FILE_PATH}")
         list(APPEND INCLUDE_DIRS "${FILE_PATH}")
@@ -18,6 +20,8 @@ endforeach()
 list(REMOVE_DUPLICATES INCLUDE_DIRS)
 
 target_include_directories(Graphics PRIVATE ${INCLUDE_DIRS})
+
+include_directories(${MATHFU_PATH}/include ${MATHFU_PATH}/dependecies/vectorial/include)
 
 add_custom_command(TARGET Graphics POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

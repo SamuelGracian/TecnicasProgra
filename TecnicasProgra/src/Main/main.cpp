@@ -3,6 +3,8 @@
 #include <string>
 #include <sstream> 
 #include <chrono> 
+#include "mathfu/matrix.h"
+#include "mathfu/constants.h"
 
 struct VERTEX
 {               
@@ -46,6 +48,16 @@ int main()
 {
     uint32_t width = 800;
     uint32_t height = 600;
+
+
+    mathfu::Vector <float,3> Eye(6.0f, 3.0f, 0.0f);
+    mathfu::Vector <float,3> At (0.0f, 1.0f, 0.0f);
+    mathfu::Vector <float,3> Up (0.0f, 1.0f, 0.0f);
+
+    mathfu::Matrix <float,4,4> View = mathfu::Matrix <float, 4,4 > ::LookAt (At, Eye , Up);
+
+    mathfu::Matrix <float, 4, 4> Perspective = mathfu::Matrix <float, 4, 4 > ::Perspective((mathfu::kPi / 4), (width / height), 0.01f, 100.0f, -1.0f);
+
 
     std::shared_ptr<DisplaySurface> window = std::make_shared<DisplaySurface>();
     window->init(width, height, L"Tecnicas Progra");
