@@ -24,6 +24,12 @@ struct MoveVertex
 {
     float  cosValue, amplitude, c, d;
 };
+
+struct CameraMatrices 
+{
+    mathfu::Matrix<float, 4, 4> View;
+    mathfu::Matrix<float, 4, 4> Perspective;
+};
         
 std::vector<std::string> defines{ "#define TEST" };
 
@@ -50,13 +56,12 @@ int main()
     uint32_t height = 600;
 
 
-    mathfu::Vector <float,3> Eye(6.0f, 3.0f, 0.0f);
-    mathfu::Vector <float,3> At (0.0f, 1.0f, 0.0f);
-    mathfu::Vector <float,3> Up (0.0f, 1.0f, 0.0f);
+    mathfu::Vector<float,3> Eye(6.0f, 3.0f, 0.0f);
+    mathfu::Vector<float,3> At(0.0f, 1.0f, 0.0f);
+    mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
-    mathfu::Matrix <float,4,4> View = mathfu::Matrix <float, 4,4 > ::LookAt (At, Eye , Up);
-
-    mathfu::Matrix <float, 4, 4> Perspective = mathfu::Matrix <float, 4, 4 > ::Perspective((mathfu::kPi / 4), (width / height), 0.01f, 100.0f, -1.0f);
+    mathfu::Matrix<float, 4, 4> View = mathfu::Matrix<float, 4, 4>::LookAt(At, Eye, Up);
+    mathfu::Matrix<float, 4, 4> Perspective = mathfu::Matrix<float, 4, 4>::Perspective((mathfu::kPi / 4), ((float)width / height), 0.01f, 100.0f, -1.0f);
 
 
     std::shared_ptr<DisplaySurface> window = std::make_shared<DisplaySurface>();
@@ -76,7 +81,11 @@ int main()
 
     float amplitude = 0.5f; 
     MoveVertex moveData = { 1.0f, amplitude, 1.0f, 1.0f };
-    std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(MoveVertex), 0, &moveData);
+    CameraMatrices cameraData;
+    cameraData.View = View;
+    cameraData.Perspective = Perspective;
+
+    std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(CameraMatrices), 0, &cameraData);
 
     VERTEX TriangleVertices[] =
     {
@@ -110,7 +119,7 @@ int main()
         moveData.cosValue = std::cos(time);
         moveData.amplitude = amplitude;
         
-        graphics->UpdateConstantBuffer(constantBuffer, sizeof(MoveVertex), &moveData);
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(CameraMatrices), &cameraData);
         
         graphics->ClearRenderTargetView(RTView, clearColor);
         graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
