@@ -1,31 +1,30 @@
 struct VSIn
 {
     float4 position : POSITION0;
-    float4 color : COLOR0;
+    float2 UV : TEXCOORD0;
 };
 
 struct PSIn
 {
     float4 position : SV_POSITION;
-    float4 color : COLOR0;
+    float2 UV : TEXCOORD0;
 };
 
-cbuffer GAPIConstBuffer : register(b0)
+cbuffer ViewProjection : register(b0)
 {
-    float cosValue;
-    float amplitude;
-    float c;
-    float d;
+    float4x4 View;
+    float4x4 Projection;
 }
 
 PSIn VShader(VSIn input)
 {
     PSIn output;
     
-    output.position = input.position;
-    output.position.x += (cosValue * amplitude);
-    //output.position = input.position;
-    output.color = input.color;
+    float4x4 viewProyection = mul(View, Projection);
+
+    output.position = mul(input.position, viewProyection);
+    
+    output.UV = input.UV;
 
     return output;
 }
@@ -33,5 +32,5 @@ PSIn VShader(VSIn input)
 
 float4 PShader(PSIn input) : SV_TARGET0
 {
-    return input.color;
+    return float4(1.0f, 0.0f, 0.0f, 1.0f);
 }

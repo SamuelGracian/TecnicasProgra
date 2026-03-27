@@ -36,6 +36,8 @@ public:
 
   void SetConstantBuffer(std::weak_ptr<ConstantBuffer> buffer)override;
 
+  void SetIndexBuffer(std::weak_ptr<IndexBuffer> buffer)override;
+
   //Update buffers
  void UpdateConstantBuffer(std::weak_ptr<ConstantBuffer> buffer, const uint32_t bytewidth, void* Data = nullptr) override;
 

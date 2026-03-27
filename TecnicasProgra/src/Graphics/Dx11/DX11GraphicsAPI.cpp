@@ -537,6 +537,23 @@ void DX11GraphicsAPI::SetConstantBuffer(std::weak_ptr<ConstantBuffer> buffer)
     m_immediateContext->PSSetConstantBuffers(pbuffer->GetSlot(), 1, &pbuffer->m_buffer);
 }
 
+void DX11GraphicsAPI::SetIndexBuffer(std::weak_ptr<IndexBuffer> buffer)
+{
+    if (m_immediateContext == nullptr || buffer.expired())
+    {
+        return;
+    }
+    
+    auto pbuffer = std::static_pointer_cast<Dx11IndexBuffer> (buffer.lock());
+    
+    if (pbuffer == nullptr || pbuffer->m_buffer == nullptr)
+    {
+        return;
+    }
+
+    m_immediateContext->IASetIndexBuffer(pbuffer->m_buffer, DXGI_FORMAT_R16_UINT, 0);
+}
+
 void DX11GraphicsAPI::UpdateConstantBuffer(std::weak_ptr<ConstantBuffer> buffer, const uint32_t bytewidth, void* Data)
 {
 
@@ -712,7 +729,8 @@ void DX11GraphicsAPI::Draw(uint32_t vertexCount, uint32_t startVertexLocation)
 {
     if (m_immediateContext)
     {
-        m_immediateContext->Draw(vertexCount, startVertexLocation);
+       // m_immediateContext->Draw(vertexCount, startVertexLocation);
+        m_immediateContext->DrawIndexed(vertexCount, startVertexLocation, 0);
     }
 }
 

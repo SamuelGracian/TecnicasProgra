@@ -52,6 +52,9 @@ public:
 	//Set buffers
 	virtual void SetConstantBuffer(std::weak_ptr<ConstantBuffer> buffer)=0;
 
+
+	virtual void SetIndexBuffer(std::weak_ptr<IndexBuffer> buffer) = 0; 
+
 	//Update buffers
 	virtual void UpdateConstantBuffer(std::weak_ptr<ConstantBuffer> buffer, const uint32_t bytewidth, void* Data = nullptr) = 0;
 

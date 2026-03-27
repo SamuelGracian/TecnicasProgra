@@ -5,6 +5,7 @@
 #include <chrono> 
 #include "mathfu/matrix.h"
 #include "mathfu/constants.h"
+#include <cstdint>
 
 struct VERTEX
 {               
@@ -30,7 +31,13 @@ struct CameraMatrices
     mathfu::Matrix<float, 4, 4> View;
     mathfu::Matrix<float, 4, 4> Perspective;
 };
-        
+
+struct SimpleVertex
+{
+    mathfu::Vector<float,4> Pos;
+    mathfu::Vector<float,2> Tex;
+};
+
 std::vector<std::string> defines{ "#define TEST" };
 
 std::string ReadFileToString(const std::wstring& filePath)
@@ -57,7 +64,7 @@ int main()
 
 
     mathfu::Vector<float,3> Eye(6.0f, 3.0f, 0.0f);
-    mathfu::Vector<float,3> At(0.0f, 1.0f, 0.0f);
+    mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
     mathfu::Matrix<float, 4, 4> View = mathfu::Matrix<float, 4, 4>::LookAt(At, Eye, Up);
@@ -87,14 +94,72 @@ int main()
 
     std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(CameraMatrices), 0, &cameraData);
 
-    VERTEX TriangleVertices[] =
+   /* VERTEX TriangleVertices[] =
     {
         {0.0f, 0.5f, 0.0f, 1.0f,  {1.0f, 0.0f, 0.0f, 1.0f} },
         {0.45f, -0.5f, 0.0f, 1.0f, {0.0f, 1.0f, 0.0f, 1.0f}},
         {-0.45f, -0.5f, 0.0f, 1.0f, {0.0f, 0.0f, 1.0f, 1.0f} }
+    };*/
+
+    SimpleVertex cubeVertices[] =
+    {
+        { mathfu::Vector<float,4>(-1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
+        { mathfu::Vector<float,4>(1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
+        { mathfu::Vector<float,4>(1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
+        { mathfu::Vector<float,4>(-1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
+
+        { mathfu::Vector<float,4>(-1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
+        { mathfu::Vector<float,4>(1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
+        { mathfu::Vector<float,4>(1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
+        { mathfu::Vector<float,4>(-1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
+
+        { mathfu::Vector<float,4>(-1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
+        { mathfu::Vector<float,4>(-1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
+        { mathfu::Vector<float,4>(-1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
+        { mathfu::Vector<float,4>(-1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
+
+        { mathfu::Vector<float,4>(1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
+        { mathfu::Vector<float,4>(1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
+        { mathfu::Vector<float,4>(1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
+        { mathfu::Vector<float,4>(1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
+
+        { mathfu::Vector<float,4>(-1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
+        { mathfu::Vector<float,4>(1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
+        { mathfu::Vector<float,4>(1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
+        { mathfu::Vector<float,4>(-1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
+
+        { mathfu::Vector<float,4>(-1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
+        { mathfu::Vector<float,4>(1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
+        { mathfu::Vector<float,4>(1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
+        { mathfu::Vector<float,4>(-1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
     };
 
-    std::shared_ptr<VertexBuffer> p_vertexBuffer = graphics->CreateVertexBuffer(sizeof(TriangleVertices), TriangleVertices);
+    std::shared_ptr<VertexBuffer> p_vertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex)*24 , cubeVertices);
+
+    ///Index buffer 
+
+    std::uint16_t cubeIndex[] =
+    {
+        3,1,0,
+        2,1,3,
+
+        6,4,5,
+        7,4,6,
+
+        11,9,8,
+        10,9,11,
+
+        14,12,13,
+        15,12,14,
+
+        19,17,16,
+        18,17,19,
+
+        22,20,21,
+        23,20,22
+    };
+
+    std::shared_ptr<IndexBuffer> p_indexBuffer = graphics->CreateIndexBuffer(sizeof(std::uint16_t) * 36, cubeIndex, 36);
 
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
 
@@ -125,14 +190,17 @@ int main()
         graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
         graphics->SetRenderTargetView(RTView, depthStencilView);
 
-        graphics->SetConstantBuffer(constantBuffer);
         
         graphics->SetTopology(p_topology);
+
         graphics->SetVertexShader(p_vertexShader);
         graphics->SetPixelShader(p_pixelShader);
-        graphics->SetVertexBuffer(p_vertexBuffer, sizeof(VERTEX), 0);
+
+        graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex)*24 , 0);
+        graphics->SetIndexBuffer(p_indexBuffer);
+        graphics->SetConstantBuffer(constantBuffer);
         
-        graphics->Draw(3, 0);
+        graphics->Draw(36, 0);
         
         P_swapChain->Present(0, 0);
     }
