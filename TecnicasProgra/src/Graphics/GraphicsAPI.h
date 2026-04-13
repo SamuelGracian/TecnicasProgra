@@ -15,6 +15,8 @@
 #include "GraphicGenerals.h"
 #include "Display/Window.h"
 #include "Graphics/RenderTargetView.h"
+#include "Texture2d.h"
+#include "SamplerState.h"
 
 
 class GRAPI
@@ -90,6 +92,19 @@ public:
 	virtual void ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4]) = 0;
 
 	virtual void ClearDepthStencilView(std::weak_ptr<DepthStencilView>depthStencil, DepthStencilView::ClearFlags flag , float depth, uint32_t stencil) = 0;
+
+
+	/// Textures 
+	//Sampler state
+	virtual  std::shared_ptr<SamplerState> CreateSamplerState() = 0;
+
+	virtual void SetSampler(uint32_t slot, std::weak_ptr<SamplerState> sampler) = 0;
+
+	//texture 2d
+
+	virtual std::shared_ptr<Texture2D> CreateTexture2D() = 0; 
+
+	virtual void SetTexture2D(uint32_t slot, std::weak_ptr <Texture2D> texture) = 0; 
 
 protected:
 	uint32_t m_shaderModel;

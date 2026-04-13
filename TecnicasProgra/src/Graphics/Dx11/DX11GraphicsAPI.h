@@ -69,10 +69,21 @@ public:
   //render target view
   void SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView = std::weak_ptr<DepthStencilView>()) override;
 
-
   void ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4]);
 
   void ClearDepthStencilView(std::weak_ptr<DepthStencilView>depthStencil, DepthStencilView::ClearFlags flag , float depth, uint32_t stencil) override;
+
+  /// textures
+
+  //sampler state 
+  std::shared_ptr<SamplerState> CreateSamplerState() override;
+
+  void SetSampler(uint32_t slot, std::weak_ptr<SamplerState> sampler) override;
+
+  // texture 
+  std::shared_ptr<Texture2D> LoadTextureFromFile(const std::string& filepath) override;
+	
+  void SetTexture(uint32_t slot, std::weak_ptr<Texture2D> texture) override;
 
 private:
 
