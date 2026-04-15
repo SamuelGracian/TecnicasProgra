@@ -1,6 +1,8 @@
 #pragma once
 #include "DX11GraphicsAPI.h"
 
+#include <wincodec.h>
+
 #include <assert.h>
 #include <iostream>
 #include <d3dcompiler.h>
@@ -9,7 +11,6 @@
 #include <map>
 
 #include "Graphics/Dx11/Dx11SwapChain.h"
-#include "Graphics/Dx11/Dx11ConstantBuffer.h"
 #include "Graphics/Dx11/Dx11IndexBuffer.h"
 #include "Graphics/Dx11/Dx11VertexBuffer.h"
 #include "Graphics/Dx11/Dx11Topology.h"
@@ -17,12 +18,14 @@
 #include "Graphics/Dx11/Dx11PixelShader.h"
 #include "Graphics/Dx11/Dx11DepthStencil.h"
 #include "Graphics/Dx11/Dx11RenderTargetView.h"
+#include "Graphics/Dx11/Dx11Texture2d.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "dxguid.lib")
-//#pragma comment(lib, "dxgi1_2.lib")
+#pragma comment(lib, "windowscodecs.lib")
+
 
 #define SAFE_RELEASE(x) if (x) {x -> Release(); x = nullptr;}
 
@@ -836,4 +839,83 @@ void DX11GraphicsAPI::ClearDepthStencilView(std::weak_ptr<DepthStencilView> dept
         m_immediateContext->ClearDepthStencilView(tempDS->m_depthStencilView, Dx11flag, depth, stencil);
     }
 
+}
+
+std::shared_ptr<Texture2D> DX11GraphicsAPI::LoadTextureFromFile(const std::string& filepath)
+{
+    auto texture = std::make_shared<Dx11Texture2D>();
+
+    std::wstring wFilepath(filepath.begin(), filepath.end());
+
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+
+    IWICImagingFactory* wicFactory = nullptr;
+    IWICBitmapDecoder* decoder = nullptr;
+    IWICBitmapFrameDecode* frame = nullptr;
+    IWICFormatConverter* converter = nullptr;
+
+    HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&wicFactory));
+    
+    if (SUCCEEDED(hr)) 
+        hr = wicFactory->CreateDecoderFromFilename(wFilepath.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &decoder);
+    
+    if (SUCCEEDED(hr)) 
+        hr = decoder->GetFrame(0, &frame);
+    
+    if (SUCCEEDED(hr)) 
+        hr = wicFactory->CreateFormatConverter(&converter);
+    
+    if (SUCCEEDED(hr)) 
+    {
+        hr = converter->Initialize(frame, GUID_WICPixelFormat32bppRGBA, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
+    }
+
+    UINT width = 0, height = 0;
+    std::vector<BYTE> pixels;
+
+    if (SUCCEEDED(hr)) 
+    {
+        converter->GetSize(&width, &height);
+        UINT rowPitch = width * 4; 
+        UINT imageSize = rowPitch * height;
+        pixels.resize(imageSize);
+        hr = converter->CopyPixels(nullptr, rowPitch, imageSize, pixels.data());
+    }
+
+    if (converter) converter->Release();
+    if (frame) frame->Release();
+    if (decoder) decoder->Release();
+    if (wicFactory) wicFactory->Release();
+
+    if (FAILED(hr) || pixels.empty()) 
+        return nullptr;
+
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = width;
+    texDesc.Height = height;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.Usage = D3D11_USAGE_DEFAULT;
+    texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    
+    D3D11_SUBRESOURCE_DATA subData = {};
+    subData.pSysMem = pixels.data();
+    subData.SysMemPitch = width * 4;
+
+    hr = m_device->CreateTexture2D(&texDesc, &subData, &texture->m_texture);
+
+    if (SUCCEEDED(hr))
+    {
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Format = texDesc.Format;
+        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MostDetailedMip = 0;
+        srvDesc.Texture2D.MipLevels = 1;
+
+        m_device->CreateShaderResourceView(texture->m_texture, &srvDesc, &texture->m_textureView);
+    }
+
+    return texture;
 }
