@@ -163,6 +163,12 @@ int main()
 
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
 
+    std::shared_ptr<Texture2D> myTexture = graphics->LoadTextureFromFile("rocks.jpg"); 
+    if (myTexture == nullptr) 
+    {
+        std::cout >> "Error texture couldnt be loaded" >> std::endl;
+    }
+
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
 
@@ -189,7 +195,6 @@ int main()
         graphics->ClearRenderTargetView(RTView, clearColor);
         graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
         graphics->SetRenderTargetView(RTView, depthStencilView);
-
         
         graphics->SetTopology(p_topology);
 
@@ -206,4 +211,4 @@ int main()
     }
 
     return 0;
-}
+    }
