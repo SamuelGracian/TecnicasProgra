@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream> 
 #include <chrono> 
+#include <iostream>
 #include "mathfu/matrix.h"
 #include "mathfu/constants.h"
 #include <cstdint>
@@ -13,13 +14,6 @@ struct VERTEX
     float Color[4] = { 1,12,0,1 };
 };
 
-//struct ConstantBufferData
-//{
-//    float a;
-//    float b;
-//    float c;
-//    float d;
-//};
 
 struct MoveVertex 
 {
@@ -63,7 +57,7 @@ int main()
     uint32_t height = 600;
 
 
-    mathfu::Vector<float,3> Eye(6.0f, 3.0f, 0.0f);
+    mathfu::Vector<float,3> Eye(-10.0f, -5.0f, -6.0f);
     mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
@@ -163,11 +157,11 @@ int main()
 
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
 
-    std::shared_ptr<Texture2D> myTexture = graphics->LoadTextureFromFile("rocks.jpg"); 
-    if (myTexture == nullptr) 
-    {
-        std::cout >> "Error texture couldnt be loaded" >> std::endl;
-    }
+    //std::shared_ptr<Texture2D> myTexture = graphics->LoadTextureFromFile("rocks.jpg"); 
+    //if (myTexture == nullptr) 
+    //{
+    //    std::cout << "Error texture couldnt be loaded" << std::endl;
+    //}
 
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
@@ -189,7 +183,7 @@ int main()
 
         moveData.cosValue = std::cos(time);
         moveData.amplitude = amplitude;
-        
+
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(CameraMatrices), &cameraData);
         
         graphics->ClearRenderTargetView(RTView, clearColor);
@@ -201,7 +195,7 @@ int main()
         graphics->SetVertexShader(p_vertexShader);
         graphics->SetPixelShader(p_pixelShader);
 
-        graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex)*24 , 0);
+        graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex) , 0);
         graphics->SetIndexBuffer(p_indexBuffer);
         graphics->SetConstantBuffer(constantBuffer);
         

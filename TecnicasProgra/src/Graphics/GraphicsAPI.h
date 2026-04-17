@@ -102,7 +102,7 @@ public:
 
 	//texture 2d
 
-	virtual std::shared_ptr<Texture2D> CreateTexture2D() = 0; 
+	virtual std::shared_ptr<Texture2D> LoadTextureFromFile(const std::string& filepath) = 0;
 
 	virtual void SetTexture2D(uint32_t slot, std::weak_ptr <Texture2D> texture) = 0; 
 

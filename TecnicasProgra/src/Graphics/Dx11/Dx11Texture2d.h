@@ -1,7 +1,7 @@
 #pragma once 
 #include "Graphics/Texture2d.h"
 
-class Dx11Texture2d : public Texture2D
+class Dx11Texture2D : public Texture2D
 {
 public:
     Dx11Texture2D() : m_texture(nullptr), m_textureView(nullptr) {}

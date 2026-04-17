@@ -83,7 +83,7 @@ public:
   // texture 
   std::shared_ptr<Texture2D> LoadTextureFromFile(const std::string& filepath) override;
 	
-  void SetTexture(uint32_t slot, std::weak_ptr<Texture2D> texture) override;
+  void SetTexture2D (uint32_t slot, std::weak_ptr<Texture2D> texture) override;
 
 private:
 

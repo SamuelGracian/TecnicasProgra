@@ -10,6 +10,7 @@
 #include <string>
 #include <map>
 
+#include "Graphics/Dx11/Dx11ConstantBuffer.h"
 #include "Graphics/Dx11/Dx11SwapChain.h"
 #include "Graphics/Dx11/Dx11IndexBuffer.h"
 #include "Graphics/Dx11/Dx11VertexBuffer.h"
@@ -511,6 +512,7 @@ std::shared_ptr<VertexBuffer> DX11GraphicsAPI::CreateVertexBuffer(const uint32_t
     bd.ByteWidth = bytewidth;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
+    bd.StructureByteStride = 24;
 
     D3D11_SUBRESOURCE_DATA InitData = {};
     InitData.pSysMem = vertices;
@@ -841,6 +843,15 @@ void DX11GraphicsAPI::ClearDepthStencilView(std::weak_ptr<DepthStencilView> dept
 
 }
 
+std::shared_ptr<SamplerState> DX11GraphicsAPI::CreateSamplerState()
+{
+    return std::shared_ptr<SamplerState>();
+}
+
+void DX11GraphicsAPI::SetSampler(uint32_t slot, std::weak_ptr<SamplerState> sampler)
+{
+}
+
 std::shared_ptr<Texture2D> DX11GraphicsAPI::LoadTextureFromFile(const std::string& filepath)
 {
     auto texture = std::make_shared<Dx11Texture2D>();
@@ -918,4 +929,8 @@ std::shared_ptr<Texture2D> DX11GraphicsAPI::LoadTextureFromFile(const std::strin
     }
 
     return texture;
+}
+
+void DX11GraphicsAPI::SetTexture2D (uint32_t slot, std::weak_ptr<Texture2D> texture)
+{
 }

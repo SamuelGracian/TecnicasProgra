@@ -20,9 +20,9 @@ PSIn VShader(VSIn input)
 {
     PSIn output;
     
-    float4x4 viewProyection = mul(View, Projection);
+    float4x4 viewProyection = mul(Projection , View);
 
-    output.position = mul(input.position, viewProyection);
+    output.position = mul( viewProyection, input.position);
     
     output.UV = input.UV;
 
