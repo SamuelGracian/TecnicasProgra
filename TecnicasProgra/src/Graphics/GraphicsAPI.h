@@ -102,9 +102,11 @@ public:
 
 	//texture 2d
 
-	virtual std::shared_ptr<Texture2D> LoadTextureFromFile(const std::string& filepath) = 0;
+	virtual std::vector<uint8_t> LoadImage(const std::string& filepath, int32_t* width, int32_t* height, int32_t* channels) = 0;
 
 	virtual void SetTexture2D(uint32_t slot, std::weak_ptr <Texture2D> texture) = 0; 
+
+	virtual std::shared_ptr<Texture2D> CreateTexture2D(std::vector<uint8_t> imageData, int32_t width, int32_t height) = 0;
 
 protected:
 	uint32_t m_shaderModel;

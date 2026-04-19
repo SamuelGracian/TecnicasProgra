@@ -81,9 +81,11 @@ public:
   void SetSampler(uint32_t slot, std::weak_ptr<SamplerState> sampler) override;
 
   // texture 
-  std::shared_ptr<Texture2D> LoadTextureFromFile(const std::string& filepath) override;
+  std::vector<uint8_t> LoadImage(const std::string& filepath, int32_t* width, int32_t* height, int32_t* channels) override;
 	
   void SetTexture2D (uint32_t slot, std::weak_ptr<Texture2D> texture) override;
+
+  std::shared_ptr<Texture2D> CreateTexture2d(std::vector<uint8_t> imageData, int32_t width, int32_t height) override;
 
 private:
 

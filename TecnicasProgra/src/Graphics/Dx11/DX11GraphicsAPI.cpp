@@ -20,6 +20,7 @@
 #include "Graphics/Dx11/Dx11DepthStencil.h"
 #include "Graphics/Dx11/Dx11RenderTargetView.h"
 #include "Graphics/Dx11/Dx11Texture2d.h"
+#include "Main/stb_image.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -852,70 +853,57 @@ void DX11GraphicsAPI::SetSampler(uint32_t slot, std::weak_ptr<SamplerState> samp
 {
 }
 
-std::shared_ptr<Texture2D> DX11GraphicsAPI::LoadTextureFromFile(const std::string& filepath)
+std::vector<uint8_t> DX11GraphicsAPI::LoadImage(const std::string& filepath, int32_t* width, int32_t* height, int32_t* channels)
+{
+    std::vector<uint8_t> imageData;
+
+    uint8_t* data = stbi_load(filepath.c_str(), width, height, channels, STBI_rgb_alpha);
+
+    if (data) {
+        imageData.resize((*width) * (*height) * STBI_rgb_alpha);
+        memcpy(imageData.data(), data, imageData.size());
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Error loading image: " << filepath << std::endl;
+    }
+
+    return imageData;
+}
+
+void DX11GraphicsAPI::SetTexture2D (uint32_t slot, std::weak_ptr<Texture2D> texture)
+{
+}
+
+std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2d(std::vector<uint8_t> imageData, int32_t width, int32_t height)
 {
     auto texture = std::make_shared<Dx11Texture2D>();
 
-    std::wstring wFilepath(filepath.begin(), filepath.end());
-
-    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-
-    IWICImagingFactory* wicFactory = nullptr;
-    IWICBitmapDecoder* decoder = nullptr;
-    IWICBitmapFrameDecode* frame = nullptr;
-    IWICFormatConverter* converter = nullptr;
-
-    HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&wicFactory));
-    
-    if (SUCCEEDED(hr)) 
-        hr = wicFactory->CreateDecoderFromFilename(wFilepath.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &decoder);
-    
-    if (SUCCEEDED(hr)) 
-        hr = decoder->GetFrame(0, &frame);
-    
-    if (SUCCEEDED(hr)) 
-        hr = wicFactory->CreateFormatConverter(&converter);
-    
-    if (SUCCEEDED(hr)) 
+    if (imageData.empty() || width <= 0 || height <= 0 || m_device == nullptr)
     {
-        hr = converter->Initialize(frame, GUID_WICPixelFormat32bppRGBA, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
-    }
-
-    UINT width = 0, height = 0;
-    std::vector<BYTE> pixels;
-
-    if (SUCCEEDED(hr)) 
-    {
-        converter->GetSize(&width, &height);
-        UINT rowPitch = width * 4; 
-        UINT imageSize = rowPitch * height;
-        pixels.resize(imageSize);
-        hr = converter->CopyPixels(nullptr, rowPitch, imageSize, pixels.data());
-    }
-
-    if (converter) converter->Release();
-    if (frame) frame->Release();
-    if (decoder) decoder->Release();
-    if (wicFactory) wicFactory->Release();
-
-    if (FAILED(hr) || pixels.empty()) 
         return nullptr;
+    }
 
     D3D11_TEXTURE2D_DESC texDesc = {};
-    texDesc.Width = width;
-    texDesc.Height = height;
+    texDesc.Width = static_cast<UINT>(width);
+    texDesc.Height = static_cast<UINT>(height);
     texDesc.MipLevels = 1;
     texDesc.ArraySize = 1;
-    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; 
     texDesc.SampleDesc.Count = 1;
+    texDesc.SampleDesc.Quality = 0;
     texDesc.Usage = D3D11_USAGE_DEFAULT;
     texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    
-    D3D11_SUBRESOURCE_DATA subData = {};
-    subData.pSysMem = pixels.data();
-    subData.SysMemPitch = width * 4;
+    texDesc.CPUAccessFlags = 0;
+    texDesc.MiscFlags = 0;
 
-    hr = m_device->CreateTexture2D(&texDesc, &subData, &texture->m_texture);
+    D3D11_SUBRESOURCE_DATA subData = {};
+    subData.pSysMem = imageData.data();
+    subData.SysMemPitch = static_cast<UINT>(width * 4);
+    subData.SysMemSlicePitch = 0;
+
+    HRESULT hr = m_device->CreateTexture2D(&texDesc, &subData, &texture->m_texture);
 
     if (SUCCEEDED(hr))
     {
@@ -927,10 +915,10 @@ std::shared_ptr<Texture2D> DX11GraphicsAPI::LoadTextureFromFile(const std::strin
 
         m_device->CreateShaderResourceView(texture->m_texture, &srvDesc, &texture->m_textureView);
     }
-
+    else
+    {
+        std::cout << "Error loading texture to dx11." << std::endl;
+        return nullptr;
+    }
     return texture;
-}
-
-void DX11GraphicsAPI::SetTexture2D (uint32_t slot, std::weak_ptr<Texture2D> texture)
-{
 }
