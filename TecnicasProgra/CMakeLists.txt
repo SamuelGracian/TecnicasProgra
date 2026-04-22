@@ -3,7 +3,7 @@ file(GLOB_RECURSE SOURCE_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
 )
 
-add_executable(Graphics ${SOURCE_FILES} "src/Graphics/Dx11/Dx11ConstantBuffer.h" "src/Graphics/Dx11/Dx11IndexBuffer.h" "src/Graphics/Dx11/Dx11VertexBuffer.h" "src/Graphics/Dx11/Dx11Topology.h" "src/Graphics/Dx11/Dx11VertexShader.h" "src/Graphics/Dx11/Dx11PixelShader.h" "src/Graphics/Dx11/Dx11DepthStencil.h" "src/Graphics/Dx11/Dx11SwapChain.cpp" "src/Graphics/Dx11/Dx11ViewPort.h" "src/Graphics/RenderTargetView.h" "src/Graphics/Dx11/Dx11RenderTargetView.h" "src/Graphics/Texture2d.h" "src/Graphics/SamplerState.h")
+add_executable(Graphics ${SOURCE_FILES} "src/Graphics/Dx11/Dx11ConstantBuffer.h" "src/Graphics/Dx11/Dx11IndexBuffer.h" "src/Graphics/Dx11/Dx11VertexBuffer.h" "src/Graphics/Dx11/Dx11Topology.h" "src/Graphics/Dx11/Dx11VertexShader.h" "src/Graphics/Dx11/Dx11PixelShader.h" "src/Graphics/Dx11/Dx11DepthStencil.h" "src/Graphics/Dx11/Dx11SwapChain.cpp" "src/Graphics/Dx11/Dx11ViewPort.h" "src/Graphics/RenderTargetView.h" "src/Graphics/Dx11/Dx11RenderTargetView.h" "src/Graphics/Texture2d.h" "src/Graphics/SamplerState.h" "src/Graphics/Dx11/Dx11SamplerState.h")
 
 file(GLOB_RECURSE ALL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*")
 
