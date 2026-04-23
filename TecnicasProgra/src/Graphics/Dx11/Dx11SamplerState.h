@@ -13,8 +13,6 @@ public:
 		if (m_samplerState) m_samplerState->Release();
 	}
 
-
-private:
 	ID3D11SamplerState* m_samplerState;
 
 };

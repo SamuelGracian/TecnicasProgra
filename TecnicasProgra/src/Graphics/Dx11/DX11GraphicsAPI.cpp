@@ -20,6 +20,7 @@
 #include "Graphics/Dx11/Dx11DepthStencil.h"
 #include "Graphics/Dx11/Dx11RenderTargetView.h"
 #include "Graphics/Dx11/Dx11Texture2d.h"
+#include "Graphics/Dx11/Dx11SamplerState.h" 
 #include "Main/stb_image.h"
 
 #pragma comment(lib, "d3d11.lib")
@@ -922,3 +923,52 @@ std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2d(std::vector<uint8_t>
     }
     return texture;
 }
+// ...
+
+std::shared_ptr<SamplerState> DX11GraphicsAPI::CreateSamplerState()
+{
+    if (m_device == nullptr)
+    {
+        return nullptr;
+    }
+
+    auto samplerState = std::make_shared<Dx11SamplerState>();
+
+    D3D11_SAMPLER_DESC sampDesc = {};
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;    
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;   
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;  
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    sampDesc.MinLOD = 0;
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+  
+    ID3D11SamplerState* rawSampler = nullptr;
+    HRESULT hr = m_device->CreateSamplerState(&sampDesc, &rawSampler);
+    if (SUCCEEDED(hr))
+    {
+        samplerState->m_samplerState = rawSampler; 
+        
+        return samplerState;
+    }
+
+    return nullptr;
+}
+
+void DX11GraphicsAPI::SetSampler(uint32_t slot, std::weak_ptr<SamplerState> sampler)
+{
+    if (m_immediateContext == nullptr || sampler.expired())
+    {
+        return;
+    }
+
+    auto dx11Sampler = std::reinterpret_pointer_cast<Dx11SamplerState>(sampler.lock());
+    
+    if (dx11Sampler && dx11Sampler->m_samplerState)
+    {
+        m_immediateContext->PSSetSamplers(slot, 1, &dx11Sampler->m_samplerState);
+    }
+}
+
+// ...
