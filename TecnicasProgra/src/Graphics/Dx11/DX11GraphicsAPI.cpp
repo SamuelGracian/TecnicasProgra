@@ -32,6 +32,9 @@
 
 #define SAFE_RELEASE(x) if (x) {x -> Release(); x = nullptr;}
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "Main/stb_image.h"
+
 #if !defined(ASSIGN_DEBUG_NAME)
 #   define ASSIGN_DEBUG_NAME(t, a)                                                                  \
    if (a)                                                                                          \
@@ -201,8 +204,11 @@ std::vector<D3D11_INPUT_ELEMENT_DESC> CreateInputLayoutDesc_internal(ID3D11Shade
 
 
 //* ///////////////////////////////////////////////////////
+
 DX11GraphicsAPI::DX11GraphicsAPI() 
 {
+
+    //TO DO: Cambiar a parametro
     m_shaderModel = 5;
 }
 
@@ -845,39 +851,7 @@ void DX11GraphicsAPI::ClearDepthStencilView(std::weak_ptr<DepthStencilView> dept
 
 }
 
-std::shared_ptr<SamplerState> DX11GraphicsAPI::CreateSamplerState()
-{
-    return std::shared_ptr<SamplerState>();
-}
-
-void DX11GraphicsAPI::SetSampler(uint32_t slot, std::weak_ptr<SamplerState> sampler)
-{
-}
-
-std::vector<uint8_t> DX11GraphicsAPI::LoadImage(const std::string& filepath, int32_t* width, int32_t* height, int32_t* channels)
-{
-    std::vector<uint8_t> imageData;
-
-    uint8_t* data = stbi_load(filepath.c_str(), width, height, channels, STBI_rgb_alpha);
-
-    if (data) {
-        imageData.resize((*width) * (*height) * STBI_rgb_alpha);
-        memcpy(imageData.data(), data, imageData.size());
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cout << "Error loading image: " << filepath << std::endl;
-    }
-
-    return imageData;
-}
-
-void DX11GraphicsAPI::SetTexture2D (uint32_t slot, std::weak_ptr<Texture2D> texture)
-{
-}
-
-std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2d(std::vector<uint8_t> imageData, int32_t width, int32_t height)
+std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2D(std::vector<uint8_t> imageData, int32_t width, int32_t height)
 {
     auto texture = std::make_shared<Dx11Texture2D>();
 
@@ -923,7 +897,6 @@ std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2d(std::vector<uint8_t>
     }
     return texture;
 }
-// ...
 
 std::shared_ptr<SamplerState> DX11GraphicsAPI::CreateSamplerState()
 {
@@ -971,4 +944,36 @@ void DX11GraphicsAPI::SetSampler(uint32_t slot, std::weak_ptr<SamplerState> samp
     }
 }
 
-// ...
+std::vector<uint8_t> DX11GraphicsAPI::LoadImageFromFile(const std::string& filepath, int32_t* width, int32_t* height, int32_t* channels)
+{
+    std::vector<uint8_t> imageData;
+
+    uint8_t* data = stbi_load(filepath.c_str(), width, height, channels, STBI_rgb_alpha);
+
+    if (data) {
+        imageData.resize((*width) * (*height) * STBI_rgb_alpha);
+        memcpy(imageData.data(), data, imageData.size());
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Error loading image: " << filepath << std::endl;
+    }
+
+    return imageData;
+}
+
+void DX11GraphicsAPI::SetTexture2D(uint32_t slot, std::weak_ptr<Texture2D> texture)
+{
+    if (m_immediateContext == nullptr || texture.expired())
+    {
+        return;
+    }
+
+    auto dx11Texture = std::static_pointer_cast<Dx11Texture2D>(texture.lock());
+
+    if (dx11Texture && dx11Texture->m_textureView)
+    {
+        m_immediateContext->PSSetShaderResources(slot, 1, &dx11Texture->m_textureView);
+    }
+}

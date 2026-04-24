@@ -7,6 +7,7 @@
 #include "mathfu/matrix.h"
 #include "mathfu/constants.h"
 #include <cstdint>
+#include <assimp/Importer.hpp>
 
 struct VERTEX
 {               
@@ -53,6 +54,9 @@ std::string ReadFileToString(const std::wstring& filePath)
 
 int main()
 {
+
+    Assimp::Importer importer;
+
     uint32_t width = 800;
     uint32_t height = 600;
 
@@ -157,11 +161,23 @@ int main()
 
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
 
-    //std::shared_ptr<Texture2D> myTexture = graphics->LoadTextureFromFile("rocks.jpg"); 
-    //if (myTexture == nullptr) 
-    //{
-    //    std::cout << "Error texture couldnt be loaded" << std::endl;
-    //}
+    int32_t imgWidth = 0;
+    int32_t imgHeight = 0;
+    int32_t imgChannels = 0;
+    
+    std::vector<uint8_t> pixels = graphics->LoadImageFromFile("textures/rocks.jpg", &imgWidth, &imgHeight, &imgChannels);
+    
+    std::shared_ptr<Texture2D> myTexture = nullptr;
+    if (!pixels.empty()) 
+    {
+        myTexture = graphics->CreateTexture2D (pixels, imgWidth, imgHeight);
+    }
+    else 
+    {
+        std::cout << "Error: Texture couldn't be loaded" << std::endl;
+    }
+
+    std::shared_ptr<SamplerState> mySampler = graphics->CreateSamplerState();
 
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
@@ -199,6 +215,15 @@ int main()
         graphics->SetIndexBuffer(p_indexBuffer);
         graphics->SetConstantBuffer(constantBuffer);
         
+        if (myTexture) 
+        {
+            graphics->SetTexture2D(0, myTexture);
+        }
+        if (mySampler) 
+        {
+            graphics->SetSampler(0, mySampler);
+        }
+
         graphics->Draw(36, 0);
         
         P_swapChain->Present(0, 0);
