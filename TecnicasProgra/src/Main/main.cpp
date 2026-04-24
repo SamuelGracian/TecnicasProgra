@@ -56,24 +56,29 @@ int main()
     uint32_t width = 800;
     uint32_t height = 600;
 
-    mathfu::Vector<float,3> Eye(1.0f, -1.0f, -6.0f);
-    mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
-    mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
+    mathfu::Vector<float,3> Eye(30.0f, 100.0f, -200.0f); 
+    mathfu::Vector<float,3> At(1.0f, 0.0f, 0.0f);
+    mathfu::Vector<float,3> Up(0.0f, 2.0f, 0.0f);
 
     mathfu::Matrix<float, 4, 4> View = mathfu::Matrix<float, 4, 4>::LookAt(At, Eye, Up);
     mathfu::Matrix<float, 4, 4> Perspective = mathfu::Matrix<float, 4, 4>::Perspective((mathfu::kPi / 4), ((float)width / height), 0.01f, 100.0f, -1.0f);
 
+    // Init Window
     std::shared_ptr<DisplaySurface> window = std::make_shared<DisplaySurface>();
     window->init(width, height, L"Tecnicas Progra");
 
+    // Init GRAPI
     std::shared_ptr<GRAPI> graphics = std::make_shared<DX11GraphicsAPI>();
     graphics->Init(window);
 
+    //Swap chain
     std::shared_ptr<SwapChain> P_swapChain = graphics->CreateSwapChain(window, GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
 
+    //Shaders
     std::shared_ptr<VertexShader> p_vertexShader = graphics->CreateVertexShader(ReadFileToString(L"Shaders/Shaders.fxh"), "VShader", defines);
     std::shared_ptr<PixelShader> p_pixelShader = graphics->CreatePixelShader(ReadFileToString(L"Shaders/Shaders.fxh"), "PShader", defines);
 
+    // Render target view 
     auto RTView = P_swapChain->GetRenderTargetView();
 
     std::shared_ptr<DepthStencilView> depthStencilView = graphics->CreateDepthStencil(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_D24_UNORM_S8_UINT);
@@ -114,13 +119,15 @@ int main()
         return -1;
     }
 
+    //topology
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
 
     int32_t imgWidth = 0;
     int32_t imgHeight = 0;
     int32_t imgChannels = 0;
     
-    std::vector<uint8_t> pixels = graphics->LoadImageFromFile("textures/base_AO.jpg", &imgWidth, &imgHeight, &imgChannels);
+    //load texture
+    std::vector<uint8_t> pixels = graphics->LoadImageFromFile("textures/rocks.jpg", &imgWidth, &imgHeight, &imgChannels);
     
     std::shared_ptr<Texture2D> myTexture = nullptr;
     if (!pixels.empty()) 
