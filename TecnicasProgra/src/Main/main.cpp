@@ -1,20 +1,24 @@
 #include "Graphics/Dx11/DX11GraphicsAPI.h"
+#include "Graphics/GraphicsAPI.h"
+#include "mathfu/constants.h"
+#include "mathfu/matrix.h"
+
 #include <fstream>
 #include <string>
 #include <sstream> 
 #include <chrono> 
 #include <iostream>
-#include "mathfu/matrix.h"
-#include "mathfu/constants.h"
+#include <vector>
 #include <cstdint>
 #include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 struct VERTEX
 {               
     float x, y, z, w;
-    float Color[4] = { 1,12,0,1 };
+    float Color[4] = { 0,0,0,0 };
 };
-
 
 struct MoveVertex 
 {
@@ -27,11 +31,6 @@ struct CameraMatrices
     mathfu::Matrix<float, 4, 4> Perspective;
 };
 
-struct SimpleVertex
-{
-    mathfu::Vector<float,4> Pos;
-    mathfu::Vector<float,2> Tex;
-};
 
 std::vector<std::string> defines{ "#define TEST" };
 
@@ -54,20 +53,15 @@ std::string ReadFileToString(const std::wstring& filePath)
 
 int main()
 {
-
-    Assimp::Importer importer;
-
     uint32_t width = 800;
     uint32_t height = 600;
 
-
-    mathfu::Vector<float,3> Eye(-10.0f, -5.0f, -6.0f);
+    mathfu::Vector<float,3> Eye(1.0f, -1.0f, -6.0f);
     mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
     mathfu::Matrix<float, 4, 4> View = mathfu::Matrix<float, 4, 4>::LookAt(At, Eye, Up);
     mathfu::Matrix<float, 4, 4> Perspective = mathfu::Matrix<float, 4, 4>::Perspective((mathfu::kPi / 4), ((float)width / height), 0.01f, 100.0f, -1.0f);
-
 
     std::shared_ptr<DisplaySurface> window = std::make_shared<DisplaySurface>();
     window->init(width, height, L"Tecnicas Progra");
@@ -92,72 +86,33 @@ int main()
 
     std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(CameraMatrices), 0, &cameraData);
 
-   /* VERTEX TriangleVertices[] =
+    // ==========================================
+    // MODEL LOAD WITH ASSIMP
+    // ==========================================
+    std::vector<SimpleVertex> modelVertices;
+    std::vector<uint16_t> modelIndices;
+
+    if (!graphics->ImportModelAsset("Models/CubeFile.obj", modelVertices, modelIndices))
     {
-        {0.0f, 0.5f, 0.0f, 1.0f,  {1.0f, 0.0f, 0.0f, 1.0f} },
-        {0.45f, -0.5f, 0.0f, 1.0f, {0.0f, 1.0f, 0.0f, 1.0f}},
-        {-0.45f, -0.5f, 0.0f, 1.0f, {0.0f, 0.0f, 1.0f, 1.0f} }
-    };*/
+        std::cout << "Failed on Load model" << std::endl;
+        return -1;
+    }
 
-    SimpleVertex cubeVertices[] =
+    std::shared_ptr<VertexBuffer> p_vertexBuffer = nullptr;
+    std::shared_ptr<IndexBuffer> p_indexBuffer = nullptr;
+    uint32_t indexCount = 0;
+
+    if (!modelVertices.empty() && !modelIndices.empty())
     {
-        { mathfu::Vector<float,4>(-1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
-        { mathfu::Vector<float,4>(1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
-        { mathfu::Vector<float,4>(1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
-        { mathfu::Vector<float,4>(-1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
-
-        { mathfu::Vector<float,4>(-1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
-        { mathfu::Vector<float,4>(1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
-        { mathfu::Vector<float,4>(1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
-        { mathfu::Vector<float,4>(-1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
-
-        { mathfu::Vector<float,4>(-1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
-        { mathfu::Vector<float,4>(-1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
-        { mathfu::Vector<float,4>(-1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
-        { mathfu::Vector<float,4>(-1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
-
-        { mathfu::Vector<float,4>(1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
-        { mathfu::Vector<float,4>(1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
-        { mathfu::Vector<float,4>(1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
-        { mathfu::Vector<float,4>(1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
-
-        { mathfu::Vector<float,4>(-1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
-        { mathfu::Vector<float,4>(1.0f, -1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
-        { mathfu::Vector<float,4>(1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
-        { mathfu::Vector<float,4>(-1.0f, 1.0f, -1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
-
-        { mathfu::Vector<float,4>(-1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 1.0f) },
-        { mathfu::Vector<float,4>(1.0f, -1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 1.0f) },
-        { mathfu::Vector<float,4>(1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(0.0f, 0.0f) },
-        { mathfu::Vector<float,4>(-1.0f, 1.0f, 1.0f,1.0f), mathfu::Vector<float,2>(1.0f, 0.0f) },
-    };
-
-    std::shared_ptr<VertexBuffer> p_vertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex)*24 , cubeVertices);
-
-    ///Index buffer 
-
-    std::uint16_t cubeIndex[] =
+        p_vertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * modelVertices.size(), modelVertices.data());
+        p_indexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * modelIndices.size(), modelIndices.data(), modelIndices.size());
+        indexCount = modelIndices.size();
+    }
+    else 
     {
-        3,1,0,
-        2,1,3,
-
-        6,4,5,
-        7,4,6,
-
-        11,9,8,
-        10,9,11,
-
-        14,12,13,
-        15,12,14,
-
-        19,17,16,
-        18,17,19,
-
-        22,20,21,
-        23,20,22
-    };
-
-    std::shared_ptr<IndexBuffer> p_indexBuffer = graphics->CreateIndexBuffer(sizeof(std::uint16_t) * 36, cubeIndex, 36);
+        std::cout << "Failed to construct buffers" << std::endl;
+        return -1;
+    }
 
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
 
@@ -165,12 +120,12 @@ int main()
     int32_t imgHeight = 0;
     int32_t imgChannels = 0;
     
-    std::vector<uint8_t> pixels = graphics->LoadImageFromFile("textures/rocks.jpg", &imgWidth, &imgHeight, &imgChannels);
+    std::vector<uint8_t> pixels = graphics->LoadImageFromFile("textures/base_AO.jpg", &imgWidth, &imgHeight, &imgChannels);
     
     std::shared_ptr<Texture2D> myTexture = nullptr;
     if (!pixels.empty()) 
     {
-        myTexture = graphics->CreateTexture2D (pixels, imgWidth, imgHeight);
+        myTexture = graphics->CreateTexture2D(pixels, imgWidth, imgHeight);
     }
     else 
     {
@@ -224,10 +179,10 @@ int main()
             graphics->SetSampler(0, mySampler);
         }
 
-        graphics->Draw(36, 0);
+        graphics->Draw(indexCount, 0);
         
         P_swapChain->Present(0, 0);
     }
 
     return 0;
-    }
+}

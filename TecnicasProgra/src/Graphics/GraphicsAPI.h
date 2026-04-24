@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include "mathfu/vector.h"
 #include "SwapChain.h"
 #include "ConstantBuffer.h"
 #include "IndexBuffer.h"
@@ -17,6 +17,12 @@
 #include "Graphics/RenderTargetView.h"
 #include "Texture2d.h"
 #include "SamplerState.h"
+
+struct SimpleVertex
+{
+	mathfu::Vector<float, 4> Pos;
+	mathfu::Vector<float, 2> Tex;
+};
 
 
 class GRAPI
@@ -107,6 +113,9 @@ public:
 	virtual void SetTexture2D(uint32_t slot, std::weak_ptr <Texture2D> texture) = 0; 
 
 	virtual std::shared_ptr<Texture2D> CreateTexture2D(std::vector<uint8_t> imageData, int32_t width, int32_t height) = 0;
+
+	// Nueva función para cargar modelos
+	virtual bool ImportModelAsset(const std::string& filename, std::vector<SimpleVertex>& outVertices, std::vector<uint16_t>& outIndices) = 0;
 
 protected:
 	uint32_t m_shaderModel;
