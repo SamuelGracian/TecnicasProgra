@@ -56,7 +56,7 @@ int main()
     uint32_t width = 800;
     uint32_t height = 600;
 
-    mathfu::Vector<float,3> Eye(30.0f, 100.0f, -200.0f); 
+    mathfu::Vector<float,3> Eye(50.0f, 100.0f, -200.0f); 
     mathfu::Vector<float,3> At(1.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 2.0f, 0.0f);
 
@@ -97,6 +97,8 @@ int main()
     std::vector<SimpleVertex> modelVertices;
     std::vector<uint16_t> modelIndices;
 
+    // drakefire_pistol_low
+    // CubeFile
     if (!graphics->ImportModelAsset("Models/CubeFile.obj", modelVertices, modelIndices))
     {
         std::cout << "Failed on Load model" << std::endl;
