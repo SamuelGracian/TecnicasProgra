@@ -56,12 +56,12 @@ int main()
     uint32_t width = 800;
     uint32_t height = 600;
 
-    mathfu::Vector<float,3> Eye(50.0f, 100.0f, -200.0f); 
-    mathfu::Vector<float,3> At(1.0f, 0.0f, 0.0f);
-    mathfu::Vector<float,3> Up(0.0f, 2.0f, 0.0f);
+    mathfu::Vector<float,3> Eye(100.0f, 100.0f, -200.0f); 
+    mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
+    mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
     mathfu::Matrix<float, 4, 4> View = mathfu::Matrix<float, 4, 4>::LookAt(At, Eye, Up);
-    mathfu::Matrix<float, 4, 4> Perspective = mathfu::Matrix<float, 4, 4>::Perspective((mathfu::kPi / 4), ((float)width / height), 0.01f, 100.0f, -1.0f);
+    mathfu::Matrix<float, 4, 4> Perspective = mathfu::Matrix<float, 4, 4>::Perspective((mathfu::kPi / 4), ((float)width / height), 0.01f, 1000.0f, -1.0f);
 
     // Init Window
     std::shared_ptr<DisplaySurface> window = std::make_shared<DisplaySurface>();
@@ -99,7 +99,7 @@ int main()
 
     // drakefire_pistol_low
     // CubeFile
-    if (!graphics->ImportModelAsset("Models/CubeFile.obj", modelVertices, modelIndices))
+    if (!graphics->ImportModelAsset_Assimp("Models/drakefire_pistol_low.obj", modelVertices, modelIndices))
     {
         std::cout << "Failed on Load model" << std::endl;
         return -1;
