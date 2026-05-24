@@ -988,51 +988,74 @@ void DX11GraphicsAPI::SetTexture2D(uint32_t slot, std::weak_ptr<Texture2D> textu
     }
 }
 
+
 bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::vector<SimpleVertex>& outVertices, std::vector<uint16_t>& outIndices)
 {
     Assimp::Importer importer;
-    
-    const aiScene* scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 
-    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+    const aiScene* scene = importer.ReadFile(
+        filename,
+        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+
+    if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode)
     {
         std::cout << "Error loading model: " << importer.GetErrorString() << std::endl;
         return false;
     }
 
-    if (scene->mNumMeshes > 0)
+    for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex)
     {
-        aiMesh* mesh = scene->mMeshes[0];
-            
-        for (unsigned int i = 0; i < mesh->mNumVertices; i++)
+        aiMesh* mesh = scene->mMeshes[meshIndex];
+        if (!mesh)
+            continue;
+
+        const uint32_t vertexOffset = static_cast<uint32_t>(outVertices.size());
+
+        for (unsigned int i = 0; i < mesh->mNumVertices; ++i)
         {
             SimpleVertex vertex;
-            vertex.Pos = mathfu::Vector<float, 4>(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, 1.0f);
-                
+            vertex.Pos = mathfu::Vector<float, 4>(
+                mesh->mVertices[i].x,
+                mesh->mVertices[i].y,
+                mesh->mVertices[i].z,
+                1.0f);
+
             if (mesh->mTextureCoords[0])
             {
-                vertex.Tex = mathfu::Vector<float, 2>(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+                vertex.Tex = mathfu::Vector<float, 2>(
+                    mesh->mTextureCoords[0][i].x,
+                    mesh->mTextureCoords[0][i].y);
             }
             else
             {
                 vertex.Tex = mathfu::Vector<float, 2>(0.0f, 0.0f);
             }
-                
+
             outVertices.push_back(vertex);
         }
 
-        for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+        for (unsigned int i = 0; i < mesh->mNumFaces; ++i)
         {
-            aiFace face = mesh->mFaces[i];
-            for (unsigned int j = 0; j < face.mNumIndices; j++)
+            const aiFace& face = mesh->mFaces[i];
+
+            for (unsigned int j = 0; j < face.mNumIndices; ++j)
             {
-                outIndices.push_back(face.mIndices[j]);
+                uint32_t index = vertexOffset + face.mIndices[j];
+
+                if (index > UINT16_MAX)
+                {
+                    std::cout << "Error: model has too many vertices for uint16_t indices." << std::endl;
+                    return false;
+                }
+
+                outIndices.push_back(static_cast<uint16_t>(index));
             }
         }
     }
-    
+
     return true;
 }
+
 
 //void DX11GraphicsAPI::ObjectLoader(const std::string& filename, std::vector<SimpleVertex>& outVertices, std::vector<uint16_t>& outIndices, std::string& outError)
 //{
