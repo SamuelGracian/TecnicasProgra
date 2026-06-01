@@ -36,6 +36,7 @@
 
 
 #define SAFE_RELEASE(x) if (x) {x -> Release(); x = nullptr;}
+#define HIGHER_AVAILABLE_SLOT 8
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "Main/stb_image.h"
@@ -1019,6 +1020,22 @@ bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::
                 mesh->mVertices[i].y,
                 mesh->mVertices[i].z,
                 1.0f);
+            
+            if (mesh->HasNormals() && mesh->mNormals)
+            {
+                vertex.Normals = mathfu::Vector<float, 4>
+                    (
+                        mesh->mNormals[i].x,
+                        mesh->mNormals[i].y,
+                        mesh->mNormals[i].z,
+                        0.0f
+                    );
+            }
+
+            else
+            {
+                vertex.Normals = mathfu::Vector<float, 4>(0.0f, 0.0f, 0.0f, 0.0f);
+            }
 
             if (mesh->mTextureCoords[0])
             {

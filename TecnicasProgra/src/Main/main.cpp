@@ -181,7 +181,7 @@ int main()
         
         if (myTexture) 
         {
-            graphics->SetTexture2D(0, myTexture);
+            graphics->SetTexture2D(1, myTexture);
         }
         if (mySampler) 
         {
