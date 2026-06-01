@@ -29,6 +29,7 @@ struct CameraMatrices
 {
     mathfu::Matrix<float, 4, 4> View;
     mathfu::Matrix<float, 4, 4> Perspective;
+    mathfu::Matrix<float, 4, 4> worldMatrix;
 };
 
 
@@ -88,6 +89,8 @@ int main()
     CameraMatrices cameraData;
     cameraData.View = View;
     cameraData.Perspective = Perspective;
+    cameraData.worldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float,3> (50,50,50));
+    cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float,4>::FromRotationMatrix (mathfu::Matrix<float, 4, 4>::RotationX(mathfu::kPi * .5)); 
 
     std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(CameraMatrices), 0, &cameraData);
 
