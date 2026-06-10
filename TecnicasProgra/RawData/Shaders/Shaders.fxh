@@ -2,6 +2,8 @@ Texture2D ColorTexture : register(t1);
 
 SamplerState Sampler : register(s0);
 
+Texture2D NormalTexture : register(t2);
+
 struct VSIn
 {
     float4 position : POSITION0;
@@ -42,6 +44,6 @@ PSIn VShader(VSIn input)
 
 float4 PShader(PSIn input) : SV_TARGET0
 {
-    return float4(input.Normals.xyz, 1);
-    return ColorTexture.Sample(Sampler, input.UV);
+    //return float4(input.Normals.xyz, 1);
+    return NormalTexture.Sample(Sampler, input.UV);
 }

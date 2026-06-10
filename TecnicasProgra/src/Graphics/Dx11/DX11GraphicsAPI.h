@@ -85,7 +85,7 @@ public:
 	
   void SetTexture2D (uint32_t slot, std::weak_ptr<Texture2D> texture) override;
 
-  std::shared_ptr<Texture2D>  CreateTexture2D(std::vector<uint8_t> imageData, int32_t width, int32_t height) override;
+  std::shared_ptr<Texture2D>  CreateTexture2D(const std::vector<uint8_t>& imageData, int32_t width, int32_t height) override;
 
   virtual bool ImportModelAsset_Assimp(const std::string& filename, std::vector<SimpleVertex>& outVertices, std::vector<uint16_t>& outIndices) override;
 
@@ -102,6 +102,10 @@ private:
 	  std::vector<std::string> Defines, SHADER_TYPE::K shaderType);
 
   ID3D11Texture2D* CreateTexture2D_internal(uint32_t width, uint32_t height, const GAPI_FORMAT::K format, uint32_t bindFlags);
+
+  // normals
+  std::shared_ptr<Texture2D> CreateTexture2DFromFile(const std::string& filepath) override;
+
  private:
   ID3D11Device* m_device = nullptr;
   ID3D11DeviceContext* m_immediateContext = nullptr;

@@ -113,12 +113,14 @@ public:
 
 	virtual void SetTexture2D(uint32_t slot, std::weak_ptr <Texture2D> texture) = 0; 
 
-	virtual std::shared_ptr<Texture2D> CreateTexture2D(std::vector<uint8_t> imageData, int32_t width, int32_t height) = 0;
+	virtual std::shared_ptr<Texture2D> CreateTexture2D(const std::vector<uint8_t>& imageData, int32_t width, int32_t height) = 0;
 
 	// Nueva función para cargar modelos
 	virtual bool ImportModelAsset_Assimp(const std::string& filename, std::vector<SimpleVertex>& outVertices, std::vector<uint16_t>& outIndices) = 0;
 
 	//virtual void ObjectLoader(const std::string& path, std::vector<SimpleVertex>& vertices, std::vector<uint16_t>& indices, std::string& error) = 0;
+
+    virtual std::shared_ptr<Texture2D> CreateTexture2DFromFile(const std::string& filepath) = 0;
 
 protected:
 	uint32_t m_shaderModel;

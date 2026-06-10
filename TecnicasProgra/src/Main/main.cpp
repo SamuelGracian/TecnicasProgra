@@ -144,6 +144,9 @@ int main()
         std::cout << "Error: Texture couldn't be loaded" << std::endl;
     }
 
+    //normals
+    std::shared_ptr<Texture2D> normalTexture = graphics->CreateTexture2DFromFile("Textures/base_normal.jpg");
+
     std::shared_ptr<SamplerState> mySampler = graphics->CreateSamplerState();
 
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
@@ -189,6 +192,10 @@ int main()
         if (mySampler) 
         {
             graphics->SetSampler(0, mySampler);
+        }
+        if (normalTexture)
+        {
+            graphics->SetTexture2D(2, normalTexture);
         }
 
         graphics->Draw(indexCount, 0);

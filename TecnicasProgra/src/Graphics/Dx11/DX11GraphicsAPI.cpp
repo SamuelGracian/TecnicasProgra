@@ -862,7 +862,7 @@ void DX11GraphicsAPI::ClearDepthStencilView(std::weak_ptr<DepthStencilView> dept
 
 }
 
-std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2D(std::vector<uint8_t> imageData, int32_t width, int32_t height)
+std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2D(const std::vector<uint8_t>& imageData, int32_t width, int32_t height)
 {
     auto texture = std::make_shared<Dx11Texture2D>();
 
@@ -889,9 +889,7 @@ std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2D(std::vector<uint8_t>
     subData.SysMemPitch = static_cast<UINT>(width * 4);
     subData.SysMemSlicePitch = 0;
 
-    HRESULT hr = m_device->CreateTexture2D(&texDesc, &subData, &texture->m_texture);
-
-    if (SUCCEEDED(hr))
+    if (SUCCEEDED(m_device->CreateTexture2D(&texDesc, &subData, &texture->m_texture)))
     {
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
         srvDesc.Format = texDesc.Format;
@@ -899,14 +897,14 @@ std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2D(std::vector<uint8_t>
         srvDesc.Texture2D.MostDetailedMip = 0;
         srvDesc.Texture2D.MipLevels = 1;
 
-        m_device->CreateShaderResourceView(texture->m_texture, &srvDesc, &texture->m_textureView);
+        if (SUCCEEDED(m_device->CreateShaderResourceView(texture->m_texture, &srvDesc, &texture->m_textureView)))
+        {
+            return texture;
+        }
     }
-    else
-    {
-        std::cout << "Error loading texture to dx11." << std::endl;
-        return nullptr;
-    }
-    return texture;
+    std::cout << "Error loading texture to dx11." << std::endl;
+    return nullptr;
+    
 }
 
 std::shared_ptr<SamplerState> DX11GraphicsAPI::CreateSamplerState()
@@ -1073,168 +1071,17 @@ bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::
     return true;
 }
 
+std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2DFromFile(const std::string& filepath)
+{
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t channels = 0;
 
-//void DX11GraphicsAPI::ObjectLoader(const std::string& filename, std::vector<SimpleVertex>& outVertices, std::vector<uint16_t>& outIndices, std::string& outError)
-//{
-//    std::ifstream in(filename);
-//    if (!in.is_open())
-//    {
-//        outError = "Failed to open: " + filename;
-//        return;
-//    }
-//
-//    Vector3 poition;
-//    std::vector<Vector2> texCoords;
-//    std::vector<SimpleVertex> vertices;
-//    std::vector<uint32_t> indices32;
-//    std::unordered_map<std::string, uint32_t> indexMap;
-//
-//    auto makeKey = [](int vi, int vti) -> std::string
-//    {
-//        return std::to_string(vi) + "/" + std::to_string(vti);
-//    };
-//
-//    auto parseFaceRef = [](const std::string& ref, int& vi, int& vti)
-//    {
-//        vi = 0;
-//        vti = 0;
-//
-//        const size_t firstSlash = ref.find('/');
-//        if (firstSlash == std::string::npos)
-//        {
-//            vi = std::stoi(ref);
-//            return;
-//        }
-//
-//        const std::string posPart = ref.substr(0, firstSlash);
-//        if (!posPart.empty())
-//        {
-//            vi = std::stoi(posPart);
-//        }
-//
-//        const size_t secondSlash = ref.find('/', firstSlash + 1);
-//        const std::string texPart = ref.substr(firstSlash + 1, secondSlash - firstSlash - 1);
-//        if (!texPart.empty())
-//        {
-//            vti = std::stoi(texPart);
-//        }
-//    };
-//
-//    std::string line;
-//    while (std::getline(in, line))
-//    {
-//        if (line.empty() || line[0] == '#')
-//        {
-//            continue;
-//        }
-//
-//        std::istringstream iss(line);
-//        std::string token;
-//        iss >> token;
-//
-//        if (token == "v")
-//        {
-//            Vec3 p{};
-//            iss >> p.x >> p.y >> p.z;
-//            positions.push_back(p);
-//        }
-//        else if (token == "vt")
-//        {
-//            Vec2 t{};
-//            iss >> t.u >> t.v;
-//            texCoords.push_back(t);
-//        }
-//        else if (token == "f")
-//        {
-//            std::vector<std::string> refs;
-//            std::string ref;
-//            while (iss >> ref)
-//            {
-//                refs.push_back(ref);
-//            }
-//
-//            if (refs.size() < 3)
-//            {
-//                continue;
-//            }
-//
-//            auto processVertRef = [&](const std::string& faceRef) -> uint32_t
-//            {
-//                int vi = 0;
-//                int vti = 0;
-//                parseFaceRef(faceRef, vi, vti);
-//
-//                if (vi < 0) vi = static_cast<int>(positions.size()) + vi + 1;
-//                if (vti < 0) vti = static_cast<int>(texCoords.size()) + vti + 1;
-//
-//                if (vi <= 0 || vi > static_cast<int>(positions.size()))
-//                {
-//                    outError = "OBJ: position index out of range in " + faceRef;
-//                    throw std::runtime_error(outError);
-//                }
-//
-//                const std::string key = makeKey(vi, vti);
-//                auto it = indexMap.find(key);
-//                if (it != indexMap.end())
-//                {
-//                    return it->second;
-//                }
-//
-//                SimpleVertex simpleVrtx{};
-//                const Vec3 p = positions[vi - 1];
-//                simpleVrtx.Pos = Vec3 (p.x, p.y, p.z);
-//
-//                if (vti > 0 && vti <= static_cast<int>(texCoords.size()))
-//                {
-//                    const Vec2 t = texCoords[vti - 1];
-//                    simpleVrtx.Tex = DirectX::XMFLOAT2(t.u, 1.0f - t.v);
-//                }
-//                else
-//                {
-//                    simpleVrtx.Tex = DirectX::XMFLOAT2(0.0f, 0.0f);
-//                }
-//
-//                const uint32_t newIndex = static_cast<uint32_t>(vertices.size());
-//                vertices.push_back(simpleVrtx);
-//                indexMap.emplace(key, newIndex);
-//                return newIndex;
-//            };
-//
-//            try
-//            {
-//                for (size_t i = 1; i + 1 < refs.size(); ++i)
-//                {
-//                    const uint32_t a = processVertRef(refs[0]);
-//                    const uint32_t b = processVertRef(refs[i]);
-//                    const uint32_t c = processVertRef(refs[i + 1]);
-//
-//                    indices32.push_back(a);
-//                    indices32.push_back(b);
-//                    indices32.push_back(c);
-//                }
-//            }
-//            catch (const std::exception& ex)
-//            {
-//                outError = ex.what();
-//                return;
-//            }
-//        }
-//    }
-//
-//    outVertices = std::move(vertices);
-//    outIndices.clear();
-//    outIndices.reserve(indices32.size());
-//
-//    for (uint32_t idx : indices32)
-//    {
-//        if (idx > UINT16_MAX)
-//        {
-//            outError = "OBJ: index exceeds uint16_t range";
-//            outVertices.clear();
-//            outIndices.clear();
-//            return;
-//        }
-//
-//        outIndices.push_back(static_cast<uint16_t>(idx));
-//    }
-//}
+    std::vector<uint8_t> pixels = LoadImageFromFile(filepath, &width, &height, &channels);
+    if (pixels.empty())
+    {
+        return nullptr;
+    }
+
+    return CreateTexture2D(pixels, width, height);
+}
