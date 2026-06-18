@@ -994,7 +994,10 @@ bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::
 
     const aiScene* scene = importer.ReadFile(
         filename,
-        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+        aiProcess_Triangulate |
+        aiProcess_FlipUVs |
+        aiProcess_JoinIdenticalVertices |
+        aiProcess_CalcTangentSpace);
 
     if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode)
     {
@@ -1018,21 +1021,38 @@ bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::
                 mesh->mVertices[i].y,
                 mesh->mVertices[i].z,
                 1.0f);
-            
+
             if (mesh->HasNormals() && mesh->mNormals)
             {
-                vertex.Normals = mathfu::Vector<float, 4>
-                    (
-                        mesh->mNormals[i].x,
-                        mesh->mNormals[i].y,
-                        mesh->mNormals[i].z,
-                        0.0f
-                    );
+                vertex.Normals = mathfu::Vector<float, 4>(
+                    mesh->mNormals[i].x,
+                    mesh->mNormals[i].y,
+                    mesh->mNormals[i].z,
+                    0.0f);
             }
-
             else
             {
                 vertex.Normals = mathfu::Vector<float, 4>(0.0f, 0.0f, 0.0f, 0.0f);
+            }
+
+            if (mesh->HasTangentsAndBitangents() && mesh->mTangents && mesh->mBitangents)
+            {
+                vertex.Tangent = mathfu::Vector<float, 4>(
+                    mesh->mTangents[i].x,
+                    mesh->mTangents[i].y,
+                    mesh->mTangents[i].z,
+                    0.0f);
+
+                vertex.Binormal = mathfu::Vector<float, 4>(
+                    mesh->mBitangents[i].x,
+                    mesh->mBitangents[i].y,
+                    mesh->mBitangents[i].z,
+                    0.0f);
+            }
+            else
+            {
+                vertex.Tangent = mathfu::Vector<float, 4>(0.0f, 0.0f, 0.0f, 0.0f);
+                vertex.Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 0.0f, 0.0f);
             }
 
             if (mesh->mTextureCoords[0])

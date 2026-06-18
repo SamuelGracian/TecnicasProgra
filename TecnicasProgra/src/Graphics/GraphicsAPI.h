@@ -22,6 +22,8 @@ struct SimpleVertex
 {
 	mathfu::Vector<float, 4> Pos;
 	mathfu::Vector<float, 4> Normals;
+	mathfu::Vector<float, 4> Tangent;
+	mathfu::Vector<float, 4> Binormal;
 	mathfu::Vector<float, 2> Tex;
 };
 
