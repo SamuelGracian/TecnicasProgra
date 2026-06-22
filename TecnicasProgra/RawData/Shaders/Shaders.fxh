@@ -8,6 +8,8 @@ struct VSIn
 {
     float4 position : POSITION0;
     float4 Normals : NORMAL0;
+    float4 Tangents : TANGENT0;
+    float4 Binormal : BINORMAL0;
     float2 UV : TEXCOORD0;
 };
 
@@ -16,6 +18,7 @@ struct PSIn
     float4 position : SV_POSITION;
     float4 Normals : NORMAL0;
     float2 UV : TEXCOORD0;
+    float3x3 TBNmatrix;
 };
 
 cbuffer ViewProjection : register(b0)
@@ -38,6 +41,8 @@ PSIn VShader(VSIn input)
 
     output.Normals.xyz = normalize(input.Normals.xyz);
     
+    output.TBNmatrix = float3x3(input.Tangents.xyz, input.Binormal.xyz, input.Normals.xyz);
+    
     return output;
 }
 
@@ -45,5 +50,8 @@ PSIn VShader(VSIn input)
 float4 PShader(PSIn input) : SV_TARGET0
 {
     //return float4(input.Normals.xyz, 1);
-    return NormalTexture.Sample(Sampler, input.UV);
+    //return NormalTexture.Sample(Sampler, input.UV);
+    float3 lightDirection = normalize(float3(1, 1, -1));
+    float NDL = dot(-lightDirection, normalize(NormalTexture.Sample(Sampler, input.UV).xyz));
+    return float4(input.Normals.xyz, 1);
 }

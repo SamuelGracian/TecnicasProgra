@@ -57,7 +57,7 @@ int main()
     uint32_t width = 800;
     uint32_t height = 600;
 
-    mathfu::Vector<float,3> Eye(100.0f, 100.0f, -200.0f); 
+    mathfu::Vector<float,3> Eye(100.0f, 100.0f, 200.0f); 
     mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
