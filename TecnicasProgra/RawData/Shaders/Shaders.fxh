@@ -18,7 +18,7 @@ struct PSIn
     float4 position : SV_POSITION;
     float4 Normals : NORMAL0;
     float2 UV : TEXCOORD0;
-    float3x3 TBNmatrix;
+    float3x3 TBNmatrix : TEXCOORD1;
 };
 
 cbuffer ViewProjection : register(b0)
@@ -41,7 +41,7 @@ PSIn VShader(VSIn input)
 
     output.Normals.xyz = normalize(input.Normals.xyz);
     
-    output.TBNmatrix = float3x3(input.Tangents.xyz, input.Binormal.xyz, input.Normals.xyz);
+    output.TBNmatrix = transpose(float3x3(input.Tangents.xyz, input.Binormal.xyz, input.Normals.xyz));
     
     return output;
 }
@@ -51,7 +51,12 @@ float4 PShader(PSIn input) : SV_TARGET0
 {
     //return float4(input.Normals.xyz, 1);
     //return NormalTexture.Sample(Sampler, input.UV);
-    float3 lightDirection = normalize(float3(1, 1, -1));
-    float NDL = dot(-lightDirection, normalize(NormalTexture.Sample(Sampler, input.UV).xyz));
-    return float4(input.Normals.xyz, 1);
+    float3 Normal = normalize(NormalTexture.Sample(Sampler, input.UV).xyz);
+    Normal = Normal * 2.0 - 1.0;
+    Normal = mul(input.TBNmatrix, Normal);
+    float3 lightDirection = normalize(float3(-1, 1, -1));
+    //float NDL = dot(-lightDirection, normalize(NormalTexture.Sample(Sampler, input.UV).xyz));
+    float NDL = dot(-lightDirection, normalize(Normal).xyz);
+    //return float4(Normal.xyz, 1);
+    return float4(NDL.xxx, 1);
 }

@@ -30,6 +30,8 @@ struct CameraMatrices
     mathfu::Matrix<float, 4, 4> View;
     mathfu::Matrix<float, 4, 4> Perspective;
     mathfu::Matrix<float, 4, 4> worldMatrix;
+    mathfu::Vector <float, 3> cameraPosition;
+    float Shininess;
 };
 
 
@@ -89,8 +91,8 @@ int main()
     CameraMatrices cameraData;
     cameraData.View = View;
     cameraData.Perspective = Perspective;
-    cameraData.worldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float,3> (50,50,50));
-    cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float,4>::FromRotationMatrix (mathfu::Matrix<float, 4, 4>::RotationX(mathfu::kPi * .5)); 
+    cameraData.cameraPosition = Eye;
+    cameraData.Shininess = 5.0;
 
     std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(CameraMatrices), 0, &cameraData);
 
@@ -149,6 +151,9 @@ int main()
 
     std::shared_ptr<SamplerState> mySampler = graphics->CreateSamplerState();
 
+    //albedo 
+    std::shared_ptr <Texture2D> albedoTexture = graphics->CreateTexture2DFromFile("Textures/drakefire_pistol_low_a.jpg");
+
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
 
@@ -166,6 +171,9 @@ int main()
 
         float deltaTime = elapsed.count();
         time += deltaTime;
+
+        cameraData.worldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
+        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time *.5));
 
         moveData.cosValue = std::cos(time);
         moveData.amplitude = amplitude;
@@ -185,6 +193,7 @@ int main()
         graphics->SetIndexBuffer(p_indexBuffer);
         graphics->SetConstantBuffer(constantBuffer);
         
+        //ASSING SLOT
         if (myTexture) 
         {
             graphics->SetTexture2D(1, myTexture);
@@ -196,6 +205,11 @@ int main()
         if (normalTexture)
         {
             graphics->SetTexture2D(2, normalTexture);
+        }
+
+        if (albedoTexture)
+        {
+            graphics->SetTexture2D(3, albedoTexture);
         }
 
         graphics->Draw(indexCount, 0);

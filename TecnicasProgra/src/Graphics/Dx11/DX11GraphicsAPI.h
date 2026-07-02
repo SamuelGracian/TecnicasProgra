@@ -89,7 +89,6 @@ public:
 
   virtual bool ImportModelAsset_Assimp(const std::string& filename, std::vector<SimpleVertex>& outVertices, std::vector<uint16_t>& outIndices) override;
 
-  /*virtual void ObjectLoader(const std::string& path, std::vector<SimpleVertex>& vertices, std::vector<uint16_t>& indices, std::string& error) override;*/
 
 private:
 
