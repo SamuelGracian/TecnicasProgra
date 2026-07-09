@@ -67,7 +67,12 @@ public:
 	  float maxDepth, float topLeftX, float topLeftY)override;
 
   //render target view
+
+  std::shared_ptr<RenderTargetView> CreateRenderTargetView(uint32_t width, uint32_t height, GAPI_FORMAT::K format) override;
+
   void SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView = std::weak_ptr<DepthStencilView>()) override;
+
+  void SetRenderTargetViews(const std::vector<std::weak_ptr<RenderTargetView>>& renderTargetViews, std::weak_ptr<DepthStencilView> depthStencilView = std::weak_ptr<DepthStencilView>()) override;
 
   void ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4]);
 

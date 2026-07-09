@@ -1105,3 +1105,74 @@ std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2DFromFile(const std::s
 
     return CreateTexture2D(pixels, width, height);
 }
+
+
+void DX11GraphicsAPI::SetRenderTargetViews(const std::vector<std::weak_ptr<RenderTargetView>>& renderTargetViews,std::weak_ptr<DepthStencilView> depthStencilView)
+{
+    if (m_immediateContext == nullptr)
+    {
+        std::cout << "Null immediate context" << std::endl;
+        return;
+    }
+
+    std::vector<ID3D11RenderTargetView*> rtvs;
+    rtvs.reserve(renderTargetViews.size());
+
+    for (const auto& weakRTV : renderTargetViews)
+    {
+        if (weakRTV.expired())
+            continue;
+
+        auto tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(weakRTV.lock());
+        if (tempRTV && tempRTV->m_renderTargetView)
+        {
+            rtvs.push_back(tempRTV->m_renderTargetView);
+        }
+    }
+
+    ID3D11DepthStencilView* dsv = nullptr;
+    if (!depthStencilView.expired())
+    {
+        auto tempDSV = std::reinterpret_pointer_cast<Dx11DepthStencilView>(depthStencilView.lock());
+        if (tempDSV && tempDSV->m_depthStencilView)
+        {
+            dsv = tempDSV->m_depthStencilView;
+        }
+    }
+
+    if (!rtvs.empty())
+    {
+        m_immediateContext->OMSetRenderTargets(
+            static_cast<UINT>(rtvs.size()),
+            rtvs.data(),
+            dsv);
+    }
+}
+
+std::shared_ptr<RenderTargetView> DX11GraphicsAPI::CreateRenderTargetView(uint32_t width,uint32_t height,GAPI_FORMAT::K format)
+{
+    std::shared_ptr<Dx11RenderTargetView> resultRTV = nullptr;
+    ID3D11Texture2D* renderTargetTexture = nullptr;
+    ID3D11RenderTargetView* resultView = nullptr;
+
+    if (m_device != nullptr && width != 0 && height != 0 && format != GAPI_FORMAT::FORMAT_UNKNOWN)
+    {
+        renderTargetTexture = CreateTexture2D_internal(
+            width,
+            height,
+            format,
+            GAPI_BIND_FLAGS::RENDER_TARGET | GAPI_BIND_FLAGS::SHADER_RESOURCE);
+
+        if (renderTargetTexture)
+        {
+            if (SUCCEEDED(m_device->CreateRenderTargetView(renderTargetTexture, nullptr, &resultView)))
+            {
+                resultRTV = std::make_shared<Dx11RenderTargetView>();
+                resultRTV->m_renderTargetView = resultView;
+            }
+        }
+    }
+
+    SAFE_RELEASE(renderTargetTexture);
+    return resultRTV;
+}

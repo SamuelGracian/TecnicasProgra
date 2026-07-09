@@ -92,7 +92,7 @@ int main()
     cameraData.View = View;
     cameraData.Perspective = Perspective;
     cameraData.cameraPosition = Eye;
-    cameraData.Shininess = 5.0;
+    cameraData.Shininess = 512.0;
 
     std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(CameraMatrices), 0, &cameraData);
 
@@ -154,11 +154,23 @@ int main()
     //albedo 
     std::shared_ptr <Texture2D> albedoTexture = graphics->CreateTexture2DFromFile("Textures/drakefire_pistol_low_a.jpg");
 
+    //specular texture
+    std::shared_ptr<Texture2D> specularTexture = graphics->CreateTexture2DFromFile("Textures/base_metallic.jpg");
+
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
 
     float time = 0.0f; 
     auto previous = std::chrono::high_resolution_clock::now();
+
+
+    //second render target
+    auto SecondRTV = graphics->CreateRenderTargetView(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
+    std::vector<std::weak_ptr<RenderTargetView>> rtvs;
+    rtvs.push_back(RTView);  
+    rtvs.push_back(SecondRTV); 
+
+    graphics->SetRenderTargetViews(rtvs, depthStencilView);
 
     bool isAppRunning = true;
     while (isAppRunning)
@@ -210,6 +222,11 @@ int main()
         if (albedoTexture)
         {
             graphics->SetTexture2D(3, albedoTexture);
+        }
+
+        if (specularTexture)
+        {
+            graphics->SetTexture2D(4, specularTexture);
         }
 
         graphics->Draw(indexCount, 0);

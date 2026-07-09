@@ -96,7 +96,12 @@ public:
 		float maxDepth, float topLeftX, float topLeftY) = 0;
 
 	//Render target view
+
+	virtual std::shared_ptr<RenderTargetView> CreateRenderTargetView(uint32_t width, uint32_t height, GAPI_FORMAT::K format) = 0;
+
 	virtual void SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView = std::weak_ptr<DepthStencilView>()) = 0;
+
+	virtual void SetRenderTargetViews( const std::vector<std::weak_ptr<RenderTargetView>>& renderTargetViews,std::weak_ptr<DepthStencilView> depthStencilView = std::weak_ptr<DepthStencilView>()) = 0;
 
 	virtual void ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4]) = 0;
 
