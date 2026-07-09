@@ -80,6 +80,9 @@ int main()
     //Shaders
     std::shared_ptr<VertexShader> p_vertexShader = graphics->CreateVertexShader(ReadFileToString(L"Shaders/Shaders.fxh"), "VShader", defines);
     std::shared_ptr<PixelShader> p_pixelShader = graphics->CreatePixelShader(ReadFileToString(L"Shaders/Shaders.fxh"), "PShader", defines);
+    ///New Shaders
+    std::shared_ptr<PixelShader> p_pixelShader_1 = graphics->CreatePixelShader(ReadFileToString(L"Shaders/PixelShader.fxh"), "PShader", defines);
+    std::shared_ptr<VertexShader> p_vertexShader_1 = graphics->CreateVertexShader(ReadFileToString(L"Shaders/VertexShader.fxh"), "VShader", defines);
 
     // Render target view 
     auto RTView = P_swapChain->GetRenderTargetView();
@@ -198,8 +201,11 @@ int main()
         
         graphics->SetTopology(p_topology);
 
+        //shaders
         graphics->SetVertexShader(p_vertexShader);
         graphics->SetPixelShader(p_pixelShader);
+        graphics->SetVertexShader(p_vertexShader_1);
+        graphics->SetPixelShader(p_pixelShader_1);
 
         graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex) , 0);
         graphics->SetIndexBuffer(p_indexBuffer);
