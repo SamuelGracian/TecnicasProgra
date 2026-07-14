@@ -1,12 +1,7 @@
-Texture2D ColorTexture : register(t1);
-
-SamplerState Sampler : register(s0);
-
 Texture2D NormalTexture : register(t2);
-
 Texture2D AlbedoTexture : register(t3);
-
 Texture2D SpecularTexture : register(t4);
+SamplerState Sampler : register(s0);
 
 struct VSIn
 {
@@ -22,8 +17,14 @@ struct PSIn
     float4 position : SV_POSITION;
     float2 UV : TEXCOORD0;
     float3x3 TBNmatrix : TEXCOORD1;
-    //blinn phong
     float3 WorldPosition : TEXCOORD4;
+};
+
+struct RenderTargets
+{
+    float4 Normals : SV_Target0;
+    float4 Color : SV_Target1;
+    float4 Specular : SV_Target2;
 };
 
 cbuffer ViewProjection : register(b0)
@@ -31,7 +32,6 @@ cbuffer ViewProjection : register(b0)
     float4x4 View;
     float4x4 Projection;
     matrix world;
-    //blinn phong
     float3 CameraPosition;
     float Shininess;
 }
@@ -39,66 +39,34 @@ cbuffer ViewProjection : register(b0)
 PSIn VShader(VSIn input)
 {
     PSIn output;
-    
-    float4x4 viewProyection = mul(mul(Projection, View), world);
 
-    output.position = mul(viewProyection, input.position);
-    
-    output.WorldPosition = mul(world, input.position);
-    
+    float4x4 viewProjection = mul(mul(Projection, View), world);
+    output.position = mul(viewProjection, input.position);
+
+    output.WorldPosition = mul(world, input.position).xyz;
     output.UV = input.UV;
-    
-    float3 Normals = normalize(mul(world, float4(input.Normals.xyz, 0)).xyz);
-    
-    float3 Binormals = normalize(mul(world, float4(input.Binormal.xyz, 0)).xyz);
-    
-    float3 Tangents = normalize(mul(world, float4(input.Tangents.xyz, 0)).xyz);
-    
-    
-    output.TBNmatrix = transpose(float3x3(Tangents, Binormals, Normals));
-    
+
+    float3 n = normalize(mul(world, float4(input.Normals.xyz, 0)).xyz);
+    float3 b = normalize(mul(world, float4(input.Binormal.xyz, 0)).xyz);
+    float3 t = normalize(mul(world, float4(input.Tangents.xyz, 0)).xyz);
+
+    output.TBNmatrix = transpose(float3x3(t, b, n));
     return output;
 }
 
-
-float4 PShader(PSIn input) : SV_TARGET0
+RenderTargets PShader(PSIn input)
 {
-    //return float4(input.Normals.xyz, 1);
-    //return NormalTexture.Sample(Sampler, input.UV);
-    float3 Normal = normalize(NormalTexture.Sample(Sampler, input.UV).xyz);
-    
-    Normal = Normal * 2.0 - 1.0;
-    
-    Normal = mul(input.TBNmatrix, Normal);
-    
-    float3 lightDirection = normalize(float3(-1, 1, -1));
-    //float NDL = dot(-lightDirection, normalize(NormalTexture.Sample(Sampler, input.UV).xyz));
-    
-    //ambient light
-    float3 Ambient = ((0.2156, 1, 1) * 0.05);
-    
-    //difuse 
-    float NDL = max(dot(-lightDirection, normalize(Normal).xyz), 0.0);
-    
-    float3 Color = (AlbedoTexture.Sample(Sampler, input.UV).xyz);
-    
-    float3 Difuse = NDL * Color;
-    
-    
-    //blinn phong
-    float3 viewDirection = normalize(CameraPosition - input.WorldPosition);
-    float3 halfVector = normalize(lightDirection + viewDirection);
-    
-    //specular
-    
-    float specFactor = pow(max(dot(Normal, halfVector), 0.0), Shininess);
-    float3 specMap = SpecularTexture.Sample(Sampler, input.UV).rgb;
+    RenderTargets output;
 
-    float3 Specular = specFactor * specMap;
-    
-    float3 FinalColor = Difuse + Ambient + Specular;
-    
-    //return float4(Normal.xyz, 1);
-    //return float4(FinalColor.xyz, 1);
-    return float4(Difuse.xyz + Ambient.xyz + Specular.xyz, 1);
+    float3 normal = normalize(NormalTexture.Sample(Sampler, input.UV).xyz * 2.0f - 1.0f);
+    normal = normalize(mul(input.TBNmatrix, normal));
+
+    float3 color = AlbedoTexture.Sample(Sampler, input.UV).rgb;
+    float3 spec = SpecularTexture.Sample(Sampler, input.UV).rgb;
+
+    output.Normals = float4(normal * 0.5f + 0.5f, 1.0f);
+    output.Color = float4(color, 1.0f);
+    output.Specular = float4(spec, 1.0f);
+
+    return output;
 }

@@ -1107,6 +1107,11 @@ std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2DFromFile(const std::s
 }
 
 
+/// <summary>
+/// Set render target views into the API
+/// </summary>
+/// <param name="renderTargetViews"></param>
+/// <param name="depthStencilView"></param>
 void DX11GraphicsAPI::SetRenderTargetViews(const std::vector<std::weak_ptr<RenderTargetView>>& renderTargetViews,std::weak_ptr<DepthStencilView> depthStencilView)
 {
     if (m_immediateContext == nullptr)
@@ -1154,6 +1159,8 @@ std::shared_ptr<RenderTargetView> DX11GraphicsAPI::CreateRenderTargetView(uint32
     std::shared_ptr<Dx11RenderTargetView> resultRTV = nullptr;
     ID3D11Texture2D* renderTargetTexture = nullptr;
     ID3D11RenderTargetView* resultView = nullptr;
+    ID3D11ShaderResourceView* resourceView = nullptr;
+
 
     if (m_device != nullptr && width != 0 && height != 0 && format != GAPI_FORMAT::FORMAT_UNKNOWN)
     {
@@ -1167,8 +1174,19 @@ std::shared_ptr<RenderTargetView> DX11GraphicsAPI::CreateRenderTargetView(uint32
         {
             if (SUCCEEDED(m_device->CreateRenderTargetView(renderTargetTexture, nullptr, &resultView)))
             {
-                resultRTV = std::make_shared<Dx11RenderTargetView>();
-                resultRTV->m_renderTargetView = resultView;
+                D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+                srvDesc.Format = GetDX11Format_internal(format);
+                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+                srvDesc.Texture2D.MostDetailedMip = 0;
+                srvDesc.Texture2D.MipLevels = 1;
+
+                if (SUCCEEDED(m_device->CreateShaderResourceView(renderTargetTexture, &srvDesc, &resourceView)))
+                {
+                    resultRTV = std::make_shared<Dx11RenderTargetView>();
+                    resultRTV->m_renderTargetView = resultView;
+                    resultRTV->m_resourceView = resourceView;
+                }
+
             }
         }
     }

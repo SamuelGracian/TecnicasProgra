@@ -31,5 +31,5 @@ target_link_libraries(Graphics PRIVATE "${assimp_ROOT}/build/lib/Debug/assimp-vc
 add_custom_command(TARGET Graphics POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/RawData"
-    "$<TARGET_FILE_DIR:Graphics>"
+    "$<TARGET_FILE_DIR:Graphics>/RawData"
 )

@@ -2,6 +2,7 @@
 #include "Graphics/GraphicsAPI.h"
 #include "mathfu/constants.h"
 #include "mathfu/matrix.h"
+#include <filesystem>
 
 #include <fstream>
 #include <string>
@@ -54,6 +55,14 @@ std::string ReadFileToString(const std::wstring& filePath)
     return buffer.str();
 }
 
+//Allign Quad
+struct QuadVertex
+{
+    float x, y;
+    float u, v;
+};
+
+
 int main()
 {
     uint32_t width = 800;
@@ -78,11 +87,14 @@ int main()
     std::shared_ptr<SwapChain> P_swapChain = graphics->CreateSwapChain(window, GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
 
     //Shaders
-    std::shared_ptr<VertexShader> p_vertexShader = graphics->CreateVertexShader(ReadFileToString(L"Shaders/Shaders.fxh"), "VShader", defines);
-    std::shared_ptr<PixelShader> p_pixelShader = graphics->CreatePixelShader(ReadFileToString(L"Shaders/Shaders.fxh"), "PShader", defines);
+    //std::shared_ptr<VertexShader> p_vertexShader = graphics->CreateVertexShader(ReadFileToString(L"RawData/Shaders/Shaders.fxh"), "PShader", defines);
+    std::shared_ptr<PixelShader> p_pixelShader = graphics->CreatePixelShader(ReadFileToString(L"RawData/Shaders/Shaders.fxh"), "PShader", defines);
     ///New Shaders
-    std::shared_ptr<PixelShader> p_pixelShader_1 = graphics->CreatePixelShader(ReadFileToString(L"Shaders/PixelShader.fxh"), "PShader", defines);
-    std::shared_ptr<VertexShader> p_vertexShader_1 = graphics->CreateVertexShader(ReadFileToString(L"Shaders/VertexShader.fxh"), "VShader", defines);
+    std::shared_ptr<PixelShader> p_pixelShader_1 = graphics->CreatePixelShader(ReadFileToString(L"RawData/Shaders/PixelShader.fxh"), "PShader", defines);
+    std::shared_ptr<VertexShader> p_vertexShader_1 = graphics->CreateVertexShader(ReadFileToString(L"RawData/Shaders/VertexShader.fxh"), "VShader", defines);
+
+    std::shared_ptr<VertexShader> p_quadVertexShader = graphics->CreateVertexShader(ReadFileToString(L"RawData/Shaders/QuadVertexShader.fxh"), "VShader", defines);
+
 
     // Render target view 
     auto RTView = P_swapChain->GetRenderTargetView();
@@ -95,7 +107,7 @@ int main()
     cameraData.View = View;
     cameraData.Perspective = Perspective;
     cameraData.cameraPosition = Eye;
-    cameraData.Shininess = 512.0;
+    cameraData.Shininess = 2;
 
     std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(CameraMatrices), 0, &cameraData);
 
@@ -166,14 +178,41 @@ int main()
     float time = 0.0f; 
     auto previous = std::chrono::high_resolution_clock::now();
 
-
+    /////////////
     //second render target
     auto SecondRTV = graphics->CreateRenderTargetView(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
     std::vector<std::weak_ptr<RenderTargetView>> rtvs;
     rtvs.push_back(RTView);  
     rtvs.push_back(SecondRTV); 
 
-    graphics->SetRenderTargetViews(rtvs, depthStencilView);
+   // G-buffer RTs
+    auto NormalRTV = graphics->CreateRenderTargetView(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
+    auto ColorRTV = graphics->CreateRenderTargetView(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
+    auto SpecularRTV = graphics->CreateRenderTargetView(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
+
+    std::vector<std::weak_ptr<RenderTargetView>> gbufferRTVs;
+    gbufferRTVs.push_back(NormalRTV);
+    gbufferRTVs.push_back(ColorRTV);
+    gbufferRTVs.push_back(SpecularRTV);
+
+    // quad
+    QuadVertex quadVertices[] =
+    {
+        { -1.0f,  1.0f, 0.0f, 0.0f },
+        {  1.0f,  1.0f, 1.0f, 0.0f },
+        {  1.0f, -1.0f, 1.0f, 1.0f },
+        { -1.0f, -1.0f, 0.0f, 1.0f },
+    };
+
+    uint16_t quadIndices[] =
+    {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    std::shared_ptr<VertexBuffer> quadVB = graphics->CreateVertexBuffer(sizeof(quadVertices), quadVertices);
+    std::shared_ptr<IndexBuffer>  quadIB = graphics->CreateIndexBuffer(sizeof(quadIndices), quadIndices, 6);
+    std::shared_ptr<Topology>     quadTopology = graphics->CreateTopology(Topology::Type::TriangleList);
 
     bool isAppRunning = true;
     while (isAppRunning)
@@ -188,55 +227,72 @@ int main()
         time += deltaTime;
 
         cameraData.worldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
-        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time *.5));
+        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
 
         moveData.cosValue = std::cos(time);
         moveData.amplitude = amplitude;
 
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(CameraMatrices), &cameraData);
         
-        graphics->ClearRenderTargetView(RTView, clearColor);
-        graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
-        graphics->SetRenderTargetView(RTView, depthStencilView);
-        
-        graphics->SetTopology(p_topology);
+         
 
-        //shaders
-        graphics->SetVertexShader(p_vertexShader);
-        graphics->SetPixelShader(p_pixelShader);
-        graphics->SetVertexShader(p_vertexShader_1);
-        graphics->SetPixelShader(p_pixelShader_1);
+ // PASS 1: model
+            graphics->SetRenderTargetViews(gbufferRTVs, depthStencilView);
 
-        graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex) , 0);
-        graphics->SetIndexBuffer(p_indexBuffer);
-        graphics->SetConstantBuffer(constantBuffer);
-        
-        //ASSING SLOT
-        if (myTexture) 
-        {
-            graphics->SetTexture2D(1, myTexture);
-        }
-        if (mySampler) 
-        {
+            graphics->ClearRenderTargetView(NormalRTV, clearColor);
+            graphics->ClearRenderTargetView(ColorRTV, clearColor);
+            graphics->ClearRenderTargetView(SpecularRTV, clearColor);
+            graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+
+            graphics->SetVertexShader(p_vertexShader_1);
+            graphics->SetPixelShader(p_pixelShader_1);
+
+            graphics->SetTopology(p_topology);
+            graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex), 0);
+            graphics->SetIndexBuffer(p_indexBuffer);
+            graphics->SetConstantBuffer(constantBuffer);
+
             graphics->SetSampler(0, mySampler);
-        }
-        if (normalTexture)
-        {
-            graphics->SetTexture2D(2, normalTexture);
-        }
 
-        if (albedoTexture)
-        {
-            graphics->SetTexture2D(3, albedoTexture);
-        }
+            
+            if (normalTexture)
+            {
+                graphics->SetTexture2D(2, normalTexture);
 
-        if (specularTexture)
-        {
-            graphics->SetTexture2D(4, specularTexture);
-        }
+            }
 
-        graphics->Draw(indexCount, 0);
-        
+            if (albedoTexture)
+            {
+                graphics->SetTexture2D(3, albedoTexture);
+
+            }
+
+            if (specularTexture)
+            {
+                graphics->SetTexture2D(4, specularTexture);
+            }
+
+            graphics->Draw(indexCount, 0);
+
+            // PASS 2: quad -> backbuffer
+            graphics->SetRenderTargetView(RTView, depthStencilView);
+            graphics->ClearRenderTargetView(RTView, clearColor);
+            graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+
+            graphics->SetVertexShader(p_quadVertexShader);
+            graphics->SetPixelShader(p_pixelShader);
+
+            graphics->SetTopology(quadTopology);
+            graphics->SetVertexBuffer(quadVB, sizeof(QuadVertex), 0);
+            graphics->SetIndexBuffer(quadIB);
+
+            // bindings del G-buffer
+            graphics->SetTexture2D(0, NormalRTV);
+            graphics->SetTexture2D(1, ColorRTV);
+            graphics->SetTexture2D(2, SpecularRTV);
+
+            graphics->Draw(6, 0);
+
         P_swapChain->Present(0, 0);
     }
 

@@ -7,10 +7,12 @@ class Dx11RenderTargetView : public RenderTargetView
 {
 public:
 	Dx11RenderTargetView()
-		: m_renderTargetView(nullptr)
+		: m_renderTargetView(nullptr) , m_resourceView(nullptr)
 	{ }
 
 	~Dx11RenderTargetView() = default;
 
 	ID3D11RenderTargetView* m_renderTargetView;
+	ID3D11ShaderResourceView* m_resourceView;
+
 };

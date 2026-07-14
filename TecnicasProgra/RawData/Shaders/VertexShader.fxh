@@ -4,6 +4,17 @@ SamplerState Sampler : register(s0);
 
 Texture2D NormalTexture : register(t2);
 
+Texture2D AlbedoTexture : register(t3);
+
+Texture2D SpecularTexture : register(t4);
+
+struct RenderTargets
+{
+    float4 Normals : SV_Target0;
+    float4 Color : SV_Target1;
+    float4 Specular : SV_Target2;
+};
+
 struct VSIn
 {
     float4 position : POSITION0;
@@ -16,9 +27,10 @@ struct VSIn
 struct PSIn
 {
     float4 position : SV_POSITION;
-    float4 Normals : NORMAL0;
     float2 UV : TEXCOORD0;
     float3x3 TBNmatrix : TEXCOORD1;
+    //blinn phong
+    float3 WorldPosition : TEXCOORD4;
 };
 
 cbuffer ViewProjection : register(b0)
@@ -31,17 +43,17 @@ cbuffer ViewProjection : register(b0)
 PSIn VShader(VSIn input)
 {
     PSIn output;
-    
-    
-    float4x4 viewProyection = mul(mul(Projection, View), world);
 
-    output.position = mul(viewProyection, input.position);
-    
+    float4x4 viewProjection = mul(mul(Projection, View), world);
+    output.position = mul(viewProjection, input.position);
+
+    output.WorldPosition = mul(world, input.position).xyz;
     output.UV = input.UV;
 
-    output.Normals.xyz = normalize(input.Normals.xyz);
-    
-    output.TBNmatrix = transpose(float3x3(input.Tangents.xyz, input.Binormal.xyz, input.Normals.xyz));
-    
+    float3 n = normalize(mul(world, float4(input.Normals.xyz, 0)).xyz);
+    float3 b = normalize(mul(world, float4(input.Binormal.xyz, 0)).xyz);
+    float3 t = normalize(mul(world, float4(input.Tangents.xyz, 0)).xyz);
+
+    output.TBNmatrix = transpose(float3x3(t, b, n));
     return output;
 }
