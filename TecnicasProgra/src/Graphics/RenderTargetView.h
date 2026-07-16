@@ -6,4 +6,5 @@ class RenderTargetView : public Texture2D
 public:
 	RenderTargetView() = default;
 	~RenderTargetView() = default;
+
 };

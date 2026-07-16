@@ -31,3 +31,22 @@ namespace SHADER_TYPE
         PIXEL_SHADER
     };
 }
+
+namespace CULL_MODE
+{
+    enum K
+    {
+        CULL_NONE = 1,
+        CULL_FRONT = 2,
+        CULL_BACK = 3
+    };
+}
+
+namespace FILL_MODE
+{
+    enum K
+    {
+        FILL_WIREFRAME = 2,
+        FILL_SOLID = 3
+    };
+}

@@ -26,6 +26,7 @@
 #include "Graphics/Dx11/Dx11RenderTargetView.h"
 #include "Graphics/Dx11/Dx11Texture2d.h"
 #include "Graphics/Dx11/Dx11SamplerState.h" 
+#include "Dx11RasterizerState.h"
 #include "Main/stb_image.h"
 
 #pragma comment(lib, "d3d11.lib")
@@ -110,6 +111,12 @@ uint32_t GetDx11BindFlag_internal(uint32_t bindFlags)
     return ResultFlags;
 }
 
+/// <summary>
+/// Defualt value: D3D11_CULL_NONE
+/// </summary>
+/// <param name="shaderType"></param>
+/// <param name="shaderModel"></param>
+/// <returns></returns>
 const char* GetShaderModel_internal(SHADER_TYPE::K shaderType, uint32_t shaderModel)
 {
     static std::string ResultShader;
@@ -133,6 +140,45 @@ const char* GetShaderModel_internal(SHADER_TYPE::K shaderType, uint32_t shaderMo
 
     return ResultShader.c_str();
 }
+
+/// <summary>
+/// Default value: D3D11_CULL_NONE
+/// </summary>
+/// <param name="cullmode"></param>
+/// <returns></returns>
+D3D11_CULL_MODE GetCullMode_internal(CULL_MODE::K cullmode)
+{
+
+    switch (cullmode)
+    {
+    default: 
+        return D3D11_CULL_MODE::D3D11_CULL_NONE;
+        break;
+
+    case CULL_MODE::CULL_BACK:
+        return D3D11_CULL_MODE::D3D11_CULL_BACK;
+        break;
+
+    case CULL_MODE::CULL_FRONT:
+        return D3D11_CULL_MODE::D3D11_CULL_FRONT;
+        break;
+    }
+}
+
+D3D11_FILL_MODE GetFillMode_internal(FILL_MODE::K fillMode)
+{
+    switch (fillMode)
+    {
+    default:
+        return D3D11_FILL_MODE::D3D11_FILL_SOLID;
+        break;
+
+    case FILL_MODE::FILL_WIREFRAME:
+        return D3D11_FILL_MODE::D3D11_FILL_WIREFRAME;
+        break;
+    }
+}
+
 
 namespace Dx11HELPERS
 {
@@ -1089,6 +1135,38 @@ bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::
     }
 
     return true;
+}
+
+std::shared_ptr<RasterizerState> DX11GraphicsAPI::CreateRasterizerState(CULL_MODE::K cullMode, FILL_MODE::K fillMode)
+{
+    if (m_device == nullptr)
+    {
+        return nullptr;
+    }
+
+    D3D11_RASTERIZER_DESC  desc = {};
+    
+    desc.FillMode = GetFillMode_internal(fillMode);
+    desc.CullMode = GetCullMode_internal(cullMode);
+    desc.FrontCounterClockwise;
+    desc.DepthBias;
+    desc.DepthBiasClamp;
+    desc.SlopeScaledDepthBias;
+      desc.DepthClipEnable;
+    desc.ScissorEnable;
+    desc.MultisampleEnable;
+    desc.AntialiasedLineEnable;
+
+    ID3D11RasterizerState* resultRasterizer = nullptr;
+
+    
+    m_device->CreateRasterizerState(&desc,&resultRasterizer);
+
+    return std::shared_ptr<RasterizerState>();
+}
+
+void DX11GraphicsAPI::SetRasterizerState()
+{
 }
 
 std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2DFromFile(const std::string& filepath)

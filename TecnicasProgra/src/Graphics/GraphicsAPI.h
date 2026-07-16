@@ -2,7 +2,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "mathfu/vector.h"
+
 #include "SwapChain.h"
 #include "ConstantBuffer.h"
 #include "IndexBuffer.h"
@@ -17,6 +19,7 @@
 #include "Graphics/RenderTargetView.h"
 #include "Texture2d.h"
 #include "SamplerState.h"
+#include "RasterizerState.h"
 
 struct SimpleVertex
 {
@@ -128,6 +131,12 @@ public:
 	//virtual void ObjectLoader(const std::string& path, std::vector<SimpleVertex>& vertices, std::vector<uint16_t>& indices, std::string& error) = 0;
 
     virtual std::shared_ptr<Texture2D> CreateTexture2DFromFile(const std::string& filepath) = 0;
+
+	///Rasterzier State
+	virtual std::shared_ptr<RasterizerState> CreateRasterizerState(CULL_MODE::K cullMode, FILL_MODE::K fillMode) = 0;
+
+	virtual void SetRasterizerState() = 0;
+
 
 protected:
 	uint32_t m_shaderModel;
