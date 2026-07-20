@@ -178,6 +178,17 @@ int main()
     float time = 0.0f; 
     auto previous = std::chrono::high_resolution_clock::now();
 
+    ////
+    //Rasterizer state
+    std::shared_ptr<RasterizerState> Gapirasterizer = nullptr;
+    Gapirasterizer = graphics->CreateRasterizerState(CULL_MODE::CULL_BACK, FILL_MODE::FILL_SOLID, TRUE);
+    if (!Gapirasterizer)
+    {
+        std::cout << "Failed to create rasterizer state" << std::endl;
+        return -1;
+    }
+    graphics->SetRasterizerState(Gapirasterizer);
+
     /////////////
     //second render target
     auto SecondRTV = graphics->CreateRenderTargetView(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);

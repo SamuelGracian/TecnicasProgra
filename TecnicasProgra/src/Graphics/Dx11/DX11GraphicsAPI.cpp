@@ -1186,8 +1186,8 @@ void DX11GraphicsAPI::SetRasterizerState(std::weak_ptr <RasterizerState> rasteri
     if (dxrasterizer && dxrasterizer->m_rasterizer)
     {
         m_immediateContext->RSSetState(dxrasterizer->m_rasterizer);
+        std::cout << "Setted Rasterizer " << std::endl;
     }
-
 
 }
 
