@@ -95,9 +95,9 @@ public:
   bool ImportModelAsset_Assimp(const std::string& filename, std::vector<SimpleVertex>& outVertices, std::vector<uint16_t>& outIndices) override;
 
   // Rasterizer State
-  std::shared_ptr <RasterizerState> CreateRasterizerState(CULL_MODE::K cullMode, FILL_MODE::K fillMode ) override;
+  std::shared_ptr <RasterizerState> CreateRasterizerState(CULL_MODE::K cullMode, FILL_MODE::K fillMode, bool depthClip) override;
 
-  void SetRasterizerState() override;
+  void SetRasterizerState(std::weak_ptr <RasterizerState> rasterizer) override;
 
 private:
 

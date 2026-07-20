@@ -10,7 +10,11 @@ public:
 		m_rasterizer(nullptr), m_rasterizerDesc(nullptr)
 	{ }
 
-	~Dx11RasterizerState() = default;
+	~Dx11RasterizerState()
+	{
+		if (m_rasterizer)
+			m_rasterizer->Release();
+	}
 
 
 	ID3D11RasterizerState* m_rasterizer;

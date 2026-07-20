@@ -133,9 +133,9 @@ public:
     virtual std::shared_ptr<Texture2D> CreateTexture2DFromFile(const std::string& filepath) = 0;
 
 	///Rasterzier State
-	virtual std::shared_ptr<RasterizerState> CreateRasterizerState(CULL_MODE::K cullMode, FILL_MODE::K fillMode) = 0;
+	virtual std::shared_ptr<RasterizerState> CreateRasterizerState(CULL_MODE::K cullMode, FILL_MODE::K fillMode , bool depthClip) = 0;
 
-	virtual void SetRasterizerState() = 0;
+	virtual void SetRasterizerState(std::weak_ptr <RasterizerState> rasterizer) = 0;
 
 
 protected:

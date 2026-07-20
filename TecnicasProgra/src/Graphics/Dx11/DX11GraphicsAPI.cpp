@@ -1137,36 +1137,58 @@ bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::
     return true;
 }
 
-std::shared_ptr<RasterizerState> DX11GraphicsAPI::CreateRasterizerState(CULL_MODE::K cullMode, FILL_MODE::K fillMode)
+std::shared_ptr<RasterizerState> DX11GraphicsAPI::CreateRasterizerState(CULL_MODE::K cullMode, FILL_MODE::K fillMode, bool depthClip)
 {
     if (m_device == nullptr)
     {
         return nullptr;
     }
 
+    auto rasterizerState = std::make_shared<Dx11RasterizerState>();
+
     D3D11_RASTERIZER_DESC  desc = {};
     
     desc.FillMode = GetFillMode_internal(fillMode);
     desc.CullMode = GetCullMode_internal(cullMode);
-    desc.FrontCounterClockwise;
-    desc.DepthBias;
-    desc.DepthBiasClamp;
-    desc.SlopeScaledDepthBias;
-      desc.DepthClipEnable;
-    desc.ScissorEnable;
-    desc.MultisampleEnable;
-    desc.AntialiasedLineEnable;
+    desc.DepthClipEnable = depthClip;
+    //default values
+    desc.FrontCounterClockwise = FALSE;
+    desc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
+    desc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+    desc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
+    desc.ScissorEnable = FALSE;
+    desc.MultisampleEnable = FALSE;
+    desc.AntialiasedLineEnable = FALSE;
 
-    ID3D11RasterizerState* resultRasterizer = nullptr;
+    ID3D11RasterizerState* rawRasterizer = nullptr;
 
-    
-    m_device->CreateRasterizerState(&desc,&resultRasterizer);
+    if (SUCCEEDED(m_device->CreateRasterizerState(&desc, &rawRasterizer)))
+    {
+        rasterizerState->m_rasterizer = rawRasterizer;
+        rasterizerState->CullMode = cullMode;
+        rasterizerState->FillMode = fillMode;
+        rasterizerState->DepthClipEnable = depthClip;
 
-    return std::shared_ptr<RasterizerState>();
+        return rasterizerState;
+    }
+
+    return nullptr;
 }
 
-void DX11GraphicsAPI::SetRasterizerState()
+void DX11GraphicsAPI::SetRasterizerState(std::weak_ptr <RasterizerState> rasterizer)
 {
+    if (m_device == nullptr || rasterizer.expired())
+    {
+        return;
+    }
+    auto dxrasterizer = std::reinterpret_pointer_cast <Dx11RasterizerState> (rasterizer.lock());
+
+    if (dxrasterizer && dxrasterizer->m_rasterizer)
+    {
+        m_immediateContext->RSSetState(dxrasterizer->m_rasterizer);
+    }
+
+
 }
 
 std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2DFromFile(const std::string& filepath)
