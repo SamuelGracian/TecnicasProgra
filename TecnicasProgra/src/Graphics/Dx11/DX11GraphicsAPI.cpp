@@ -1051,7 +1051,7 @@ bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::
         return false;
     }
 
-    for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex)
+    for (unsigned int meshIndex = scene->mNumMeshes -1 ; meshIndex != 0; meshIndex--)
     {
         aiMesh* mesh = scene->mMeshes[meshIndex];
         if (!mesh)
@@ -1186,7 +1186,6 @@ void DX11GraphicsAPI::SetRasterizerState(std::weak_ptr <RasterizerState> rasteri
     if (dxrasterizer && dxrasterizer->m_rasterizer)
     {
         m_immediateContext->RSSetState(dxrasterizer->m_rasterizer);
-        std::cout << "Setted Rasterizer " << std::endl;
     }
 
 }

@@ -45,7 +45,7 @@ PSIn VShader(VSIn input)
     PSIn output;
 
     float4x4 viewProjection = mul(mul(Projection, View), world);
-    output.position = mul(viewProjection, input.position);
+    output.position = mul(viewProjection, float4(input.position.xyz, 1));
 
     output.WorldPosition = mul(world, input.position).xyz;
     output.UV = input.UV;

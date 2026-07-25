@@ -180,14 +180,26 @@ int main()
 
     ////
     //Rasterizer state
-    std::shared_ptr<RasterizerState> Gapirasterizer = nullptr;
-    Gapirasterizer = graphics->CreateRasterizerState(CULL_MODE::CULL_BACK, FILL_MODE::FILL_SOLID, TRUE);
-    if (!Gapirasterizer)
+    std::shared_ptr<RasterizerState> Rasterizer_pass1 = nullptr;
+    // Cull none, fill solid, true ( se ve el arma pero se atravieza )
+    Rasterizer_pass1 = graphics->CreateRasterizerState(CULL_MODE::CULL_BACK, FILL_MODE::FILL_SOLID, TRUE);
+    if (!Rasterizer_pass1)
     {
         std::cout << "Failed to create rasterizer state" << std::endl;
         return -1;
     }
-    graphics->SetRasterizerState(Gapirasterizer);
+
+
+
+    std::shared_ptr<RasterizerState> Rasterizer_pass2 = nullptr;
+    Rasterizer_pass2 = graphics->CreateRasterizerState(CULL_MODE::CULL_NONE, FILL_MODE::FILL_SOLID, FALSE);
+    if (!Rasterizer_pass2)
+    {
+        std::cout << "Failed to create rasterizer state" << std::endl;
+        return -1;
+    }
+
+
 
     /////////////
     //second render target
@@ -282,6 +294,7 @@ int main()
             {
                 graphics->SetTexture2D(4, specularTexture);
             }
+            graphics->SetRasterizerState(Rasterizer_pass1);
 
             graphics->Draw(indexCount, 0);
 
@@ -302,6 +315,7 @@ int main()
             graphics->SetTexture2D(1, ColorRTV);
             graphics->SetTexture2D(2, SpecularRTV);
 
+            graphics->SetRasterizerState(Rasterizer_pass2);
             graphics->Draw(6, 0);
 
         P_swapChain->Present(0, 0);
