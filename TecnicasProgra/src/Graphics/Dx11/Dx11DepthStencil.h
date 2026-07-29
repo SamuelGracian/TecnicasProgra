@@ -10,10 +10,17 @@ class Dx11DepthStencilView : public DepthStencilView
 
 public:
 	Dx11DepthStencilView() :
-		m_depthStencilView(nullptr)
+		m_depthStencilView(nullptr),
+		m_depthTexture(nullptr),
+		m_shadowSRV(nullptr)
 	{ }
 
-	~Dx11DepthStencilView() = default;
+	~Dx11DepthStencilView()
+	{
+		if (m_shadowSRV) m_shadowSRV->Release();
+		if (m_depthStencilView) m_depthStencilView->Release();
+		if (m_depthTexture) m_depthTexture->Release();
+	}
 
 	static UINT GetClearFlagDx11( const DepthStencilView::ClearFlags flag ) 
 	{
@@ -37,4 +44,6 @@ public:
 	}
 
 	ID3D11DepthStencilView* m_depthStencilView;
+	ID3D11ShaderResourceView* m_shadowSRV;
+	ID3D11Texture2D* m_depthTexture;
 };

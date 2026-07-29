@@ -73,7 +73,23 @@ int main()
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
     mathfu::Matrix<float, 4, 4> View = mathfu::Matrix<float, 4, 4>::LookAt(At, Eye, Up);
-    mathfu::Matrix<float, 4, 4> Perspective = mathfu::Matrix<float, 4, 4>::Perspective((mathfu::kPi / 4), ((float)width / height), 0.01f, 1000.0f, -1.0f);
+    mathfu::Matrix<float, 4, 4> Perspective = mathfu::Matrix<float, 4, 4>::Perspective(mathfu::kPi / 4.0f, (float)width / (float)height, 0.01f, 1000.0f);
+
+
+    ///Second Camera
+
+    mathfu::Vector<float, 3> LightDirection(-1.0f, 1.0f, -1.0f);
+    LightDirection = mathfu::Vector<float, 3>(
+        LightDirection.x / std::sqrt(3.0f),
+        LightDirection.y / std::sqrt(3.0f),
+        LightDirection.z / std::sqrt(3.0f));
+
+    mathfu::Vector<float, 3> LightEye = At - (LightDirection * 200.0f);
+
+    mathfu::Matrix<float, 4, 4> ShadowView = mathfu::Matrix<float, 4, 4>::LookAt(At, LightEye, Up);
+
+    mathfu::Matrix<float, 4, 4> ShadowProjection = mathfu::Matrix<float, 4, 4>::Ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.1f, -1.0f);
+
 
     // Init Window
     std::shared_ptr<DisplaySurface> window = std::make_shared<DisplaySurface>();
@@ -257,6 +273,39 @@ int main()
 
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(CameraMatrices), &cameraData);
         
+
+ // pass 0 light pre process 
+        CameraMatrices shadowCameraData = cameraData;
+        shadowCameraData.View = ShadowView;
+        shadowCameraData.Perspective = ShadowProjection;
+        shadowCameraData.cameraPosition = LightEye;
+
+
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(CameraMatrices), &shadowCameraData);
+
+        graphics->SetRenderTargetViews(gbufferRTVs, depthStencilView);
+        graphics->ClearRenderTargetView(NormalRTV, clearColor);
+        graphics->ClearRenderTargetView(ColorRTV, clearColor);
+        graphics->ClearRenderTargetView(SpecularRTV, clearColor);
+        graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+
+        graphics->SetVertexShader(p_vertexShader_1);
+        graphics->SetPixelShader(p_pixelShader_1);
+        graphics->SetTopology(p_topology);
+        graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex), 0);
+        graphics->SetIndexBuffer(p_indexBuffer);
+        graphics->SetConstantBuffer(constantBuffer);
+        graphics->SetSampler(0, mySampler);
+
+        if (normalTexture) graphics->SetTexture2D(2, normalTexture);
+        if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
+        if (specularTexture) graphics->SetTexture2D(4, specularTexture);
+
+        graphics->SetRasterizerState(Rasterizer_pass1);
+        graphics->Draw(indexCount, 0);
+
+        // volver a cámara normal
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(CameraMatrices), &cameraData);
          
 
  // PASS 1: model
