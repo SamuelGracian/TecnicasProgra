@@ -32,6 +32,8 @@ cbuffer ViewProjection : register(b0)
     float4x4 View;
     float4x4 Projection;
     matrix world;
+    matrix ShadowView;
+    matrix ShadowProyection;
     float3 CameraPosition;
     float Shininess;
 }

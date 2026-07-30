@@ -26,11 +26,13 @@ struct MoveVertex
     float  cosValue, amplitude, c, d;
 };
 
-struct CameraMatrices 
+struct GeneralConstBuffer 
 {
     mathfu::Matrix<float, 4, 4> View;
     mathfu::Matrix<float, 4, 4> Perspective;
     mathfu::Matrix<float, 4, 4> worldMatrix;
+    mathfu::Matrix< float, 4, 4> ShadowView;
+    mathfu::Matrix<float, 4, 4> ShadowProjection;
     mathfu::Vector <float, 3> cameraPosition;
     float Shininess;
 };
@@ -73,7 +75,7 @@ int main()
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
     mathfu::Matrix<float, 4, 4> View = mathfu::Matrix<float, 4, 4>::LookAt(At, Eye, Up);
-    mathfu::Matrix<float, 4, 4> Perspective = mathfu::Matrix<float, 4, 4>::Perspective(mathfu::kPi / 4.0f, (float)width / (float)height, 0.01f, 1000.0f);
+    mathfu::Matrix<float, 4, 4> Perspective = mathfu::Matrix<float, 4, 4>::Perspective(mathfu::kPi / 4.0f, (float)width / (float)height, 0.01f, 1000.0f, -1.0f);
 
 
     ///Second Camera
@@ -112,6 +114,10 @@ int main()
     std::shared_ptr<VertexShader> p_quadVertexShader = graphics->CreateVertexShader(ReadFileToString(L"RawData/Shaders/QuadVertexShader.fxh"), "VShader", defines);
 
 
+    std::shared_ptr<PixelShader> p_ShadowPixelShader = graphics->CreatePixelShader(ReadFileToString(L"RawData/Shaders/ShadowPixelShader.fxh"), "PShader", defines);
+    std::shared_ptr<VertexShader> p_ShadowVertexshader = graphics->CreateVertexShader(ReadFileToString(L"RawData/Shaders/ShadowVertexShader.fxh"), "VShader", defines);
+
+
     // Render target view 
     auto RTView = P_swapChain->GetRenderTargetView();
 
@@ -119,13 +125,15 @@ int main()
 
     float amplitude = 0.5f; 
     MoveVertex moveData = { 1.0f, amplitude, 1.0f, 1.0f };
-    CameraMatrices cameraData;
+    GeneralConstBuffer cameraData;
     cameraData.View = View;
     cameraData.Perspective = Perspective;
     cameraData.cameraPosition = Eye;
     cameraData.Shininess = 2;
+    cameraData.ShadowProjection = ShadowProjection;
+    cameraData.ShadowView = ShadowView;
 
-    std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(CameraMatrices), 0, &cameraData);
+    std::shared_ptr<ConstantBuffer> constantBuffer = graphics->CreateConstantBuffer(sizeof(GeneralConstBuffer), 0, &cameraData);
 
     // ==========================================
     // MODEL LOAD WITH ASSIMP
@@ -156,6 +164,57 @@ int main()
         std::cout << "Failed to construct buffers" << std::endl;
         return -1;
     }
+
+
+    // ==========================================
+   // Vertices floor
+  //==========================================
+    std::vector<SimpleVertex> planeVertices(4);
+
+    planeVertices[0].Pos = mathfu::Vector<float, 4>(-300.0f, -20.0f, -300.0f, 1.0f);
+    planeVertices[0].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
+    planeVertices[0].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
+    planeVertices[0].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
+    planeVertices[0].Tex = mathfu::Vector<float, 2>(0.0f, 1.0f);
+
+    planeVertices[1].Pos = mathfu::Vector<float, 4>(300.0f, -20.0f, -300.0f, 1.0f);
+    planeVertices[1].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
+    planeVertices[1].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
+    planeVertices[1].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
+    planeVertices[1].Tex = mathfu::Vector<float, 2>(1.0f, 1.0f);
+
+    planeVertices[2].Pos = mathfu::Vector<float, 4>(300.0f, -20.0f, 300.0f, 1.0f);
+    planeVertices[2].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
+    planeVertices[2].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
+    planeVertices[2].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
+    planeVertices[2].Tex = mathfu::Vector<float, 2>(1.0f, 0.0f);
+
+    planeVertices[3].Pos = mathfu::Vector<float, 4>(-300.0f, -20.0f, 300.0f, 1.0f);
+    planeVertices[3].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
+    planeVertices[3].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
+    planeVertices[3].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
+    planeVertices[3].Tex = mathfu::Vector<float, 2>(0.0f, 0.0f);
+
+    uint16_t planeIndices[] =
+    {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    std::shared_ptr<VertexBuffer> planeVB =
+        graphics->CreateVertexBuffer(sizeof(SimpleVertex) * planeVertices.size(), planeVertices.data());
+
+    std::shared_ptr<IndexBuffer> planeIB =
+        graphics->CreateIndexBuffer(sizeof(uint16_t) * 6, planeIndices, 6);
+
+    uint32_t planeIndexCount = 6;
+
+    //Cosnt buffer shadow
+    GeneralConstBuffer shadowBufffer;
+    shadowBufffer.worldMatrix = mathfu::Matrix<float, 4, 4>();
+    std::shared_ptr<ConstantBuffer> shadowConstantBuffer = graphics->CreateConstantBuffer(sizeof(GeneralConstBuffer), 0, &shadowBufffer);
+
+
 
     //topology
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
@@ -189,6 +248,7 @@ int main()
     std::shared_ptr<Texture2D> specularTexture = graphics->CreateTexture2DFromFile("Textures/base_metallic.jpg");
 
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
+    float whiteColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
 
     float time = 0.0f; 
@@ -253,6 +313,11 @@ int main()
     std::shared_ptr<IndexBuffer>  quadIB = graphics->CreateIndexBuffer(sizeof(quadIndices), quadIndices, 6);
     std::shared_ptr<Topology>     quadTopology = graphics->CreateTopology(Topology::Type::TriangleList);
 
+    //Shadow render target,  usar render target para profundidad 
+    auto ShadowRenderTarget = graphics->CreateRenderTargetView(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_R32_FLOAT);
+    std::vector<std::weak_ptr<RenderTargetView>> SahdowRTVS;
+    SahdowRTVS.push_back(ShadowRenderTarget);
+
     bool isAppRunning = true;
     while (isAppRunning)
     {
@@ -271,26 +336,19 @@ int main()
         moveData.cosValue = std::cos(time);
         moveData.amplitude = amplitude;
 
-        graphics->UpdateConstantBuffer(constantBuffer, sizeof(CameraMatrices), &cameraData);
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
         
 
- // pass 0 light pre process 
-        CameraMatrices shadowCameraData = cameraData;
-        shadowCameraData.View = ShadowView;
-        shadowCameraData.Perspective = ShadowProjection;
-        shadowCameraData.cameraPosition = LightEye;
+ //// pass 0 shadow pre process 
 
-
-        graphics->UpdateConstantBuffer(constantBuffer, sizeof(CameraMatrices), &shadowCameraData);
-
-        graphics->SetRenderTargetViews(gbufferRTVs, depthStencilView);
+        graphics->SetRenderTargetViews(SahdowRTVS, depthStencilView);
         graphics->ClearRenderTargetView(NormalRTV, clearColor);
         graphics->ClearRenderTargetView(ColorRTV, clearColor);
         graphics->ClearRenderTargetView(SpecularRTV, clearColor);
         graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
 
-        graphics->SetVertexShader(p_vertexShader_1);
-        graphics->SetPixelShader(p_pixelShader_1);
+        graphics->SetVertexShader(p_ShadowVertexshader);
+        graphics->SetPixelShader(p_ShadowPixelShader);
         graphics->SetTopology(p_topology);
         graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex), 0);
         graphics->SetIndexBuffer(p_indexBuffer);
@@ -301,11 +359,12 @@ int main()
         if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
         if (specularTexture) graphics->SetTexture2D(4, specularTexture);
 
+        graphics->ClearRenderTargetView(ShadowRenderTarget, whiteColor);
+
         graphics->SetRasterizerState(Rasterizer_pass1);
         graphics->Draw(indexCount, 0);
 
-        // volver a cámara normal
-        graphics->UpdateConstantBuffer(constantBuffer, sizeof(CameraMatrices), &cameraData);
+        graphics->Draw(planeIndexCount, 0);
          
 
  // PASS 1: model
@@ -347,7 +406,10 @@ int main()
 
             graphics->Draw(indexCount, 0);
 
-            // PASS 2: quad -> backbuffer
+            graphics->Draw(planeIndexCount, 0);
+
+
+     // PASS 2: quad -> backbuffer
             graphics->SetRenderTargetView(RTView, depthStencilView);
             graphics->ClearRenderTargetView(RTView, clearColor);
             graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);

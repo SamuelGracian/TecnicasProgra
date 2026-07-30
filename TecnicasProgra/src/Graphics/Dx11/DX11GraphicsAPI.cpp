@@ -71,6 +71,9 @@ DXGI_FORMAT GetDX11Format_internal(const GAPI_FORMAT::K format)
 
     case GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM:
         return DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+
+    case GAPI_FORMAT::FORMAT_R32_FLOAT:
+        return DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT;
     }
 }
 
