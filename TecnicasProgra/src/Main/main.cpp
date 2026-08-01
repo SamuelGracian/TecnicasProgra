@@ -79,18 +79,13 @@ int main()
 
 
     ///Second Camera
+    mathfu::Vector<float, 3> LightEye ( 100.0f, 100.0f, 200.0f);
 
-    mathfu::Vector<float, 3> LightDirection(-1.0f, 1.0f, -1.0f);
-    LightDirection = mathfu::Vector<float, 3>(
-        LightDirection.x / std::sqrt(3.0f),
-        LightDirection.y / std::sqrt(3.0f),
-        LightDirection.z / std::sqrt(3.0f));
-
-    mathfu::Vector<float, 3> LightEye = At - (LightDirection * 200.0f);
+    mathfu::Vector<float, 3> LightDirection = (At - LightEye).Normalized();
 
     mathfu::Matrix<float, 4, 4> ShadowView = mathfu::Matrix<float, 4, 4>::LookAt(At, LightEye, Up);
 
-    mathfu::Matrix<float, 4, 4> ShadowProjection = mathfu::Matrix<float, 4, 4>::Ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.1f, -1.0f);
+    mathfu::Matrix<float, 4, 4> ShadowProjection = mathfu::Matrix<float, 4, 4>::Ortho(-100,100.0, -100.0f, 100.0f,-1000.0f,1000.0f, -1.0f);
 
 
     // Init Window
@@ -171,29 +166,29 @@ int main()
   //==========================================
     std::vector<SimpleVertex> planeVertices(4);
 
-    planeVertices[0].Pos = mathfu::Vector<float, 4>(-300.0f, -20.0f, -300.0f, 1.0f);
+    planeVertices[0].Pos = mathfu::Vector<float, 4>(-1.0f, 0.0f, -1.0f, 1.0f);
     planeVertices[0].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
     planeVertices[0].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
     planeVertices[0].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[0].Tex = mathfu::Vector<float, 2>(0.0f, 1.0f);
+    planeVertices[0].Tex = mathfu::Vector<float, 2>(0.0f, 0.0f);
 
-    planeVertices[1].Pos = mathfu::Vector<float, 4>(300.0f, -20.0f, -300.0f, 1.0f);
+    planeVertices[1].Pos = mathfu::Vector<float, 4>(-1.0f, 0.0f, 1.0f, 1.0f);
     planeVertices[1].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
     planeVertices[1].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
     planeVertices[1].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[1].Tex = mathfu::Vector<float, 2>(1.0f, 1.0f);
+    planeVertices[1].Tex = mathfu::Vector<float, 2>(0.0f, 1.0f);
 
-    planeVertices[2].Pos = mathfu::Vector<float, 4>(300.0f, -20.0f, 300.0f, 1.0f);
+    planeVertices[2].Pos = mathfu::Vector<float, 4>(1.0f, 0.0f, 1.0f, 1.0f);
     planeVertices[2].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
     planeVertices[2].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
     planeVertices[2].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[2].Tex = mathfu::Vector<float, 2>(1.0f, 0.0f);
+    planeVertices[2].Tex = mathfu::Vector<float, 2>(1.0f, 1.0f);
 
-    planeVertices[3].Pos = mathfu::Vector<float, 4>(-300.0f, -20.0f, 300.0f, 1.0f);
+    planeVertices[3].Pos = mathfu::Vector<float, 4>(1.0f, 0.0f, -1.0f, 1.0f);
     planeVertices[3].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
     planeVertices[3].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
     planeVertices[3].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[3].Tex = mathfu::Vector<float, 2>(0.0f, 0.0f);
+    planeVertices[3].Tex = mathfu::Vector<float, 2>(1.0f, 0.0f);
 
     uint16_t planeIndices[] =
     {
@@ -209,12 +204,7 @@ int main()
 
     uint32_t planeIndexCount = 6;
 
-    //Cosnt buffer shadow
-    GeneralConstBuffer shadowBufffer;
-    shadowBufffer.worldMatrix = mathfu::Matrix<float, 4, 4>();
-    std::shared_ptr<ConstantBuffer> shadowConstantBuffer = graphics->CreateConstantBuffer(sizeof(GeneralConstBuffer), 0, &shadowBufffer);
-
-
+    mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
 
     //topology
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
@@ -239,6 +229,7 @@ int main()
     //normals
     std::shared_ptr<Texture2D> normalTexture = graphics->CreateTexture2DFromFile("Textures/base_normal.jpg");
 
+    //Sampler state
     std::shared_ptr<SamplerState> mySampler = graphics->CreateSamplerState();
 
     //albedo 
@@ -248,7 +239,7 @@ int main()
     std::shared_ptr<Texture2D> specularTexture = graphics->CreateTexture2DFromFile("Textures/base_metallic.jpg");
 
     float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
-    float whiteColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
 
     float time = 0.0f; 
@@ -270,6 +261,14 @@ int main()
     std::shared_ptr<RasterizerState> Rasterizer_pass2 = nullptr;
     Rasterizer_pass2 = graphics->CreateRasterizerState(CULL_MODE::CULL_NONE, FILL_MODE::FILL_SOLID, FALSE);
     if (!Rasterizer_pass2)
+    {
+        std::cout << "Failed to create rasterizer state" << std::endl;
+        return -1;
+    }
+
+    std::shared_ptr<RasterizerState> shadowRasterizer = nullptr;
+    shadowRasterizer = graphics->CreateRasterizerState(CULL_MODE::CULL_NONE, FILL_MODE::FILL_SOLID, TRUE);
+    if (!shadowRasterizer)
     {
         std::cout << "Failed to create rasterizer state" << std::endl;
         return -1;
@@ -318,6 +317,7 @@ int main()
     std::vector<std::weak_ptr<RenderTargetView>> SahdowRTVS;
     SahdowRTVS.push_back(ShadowRenderTarget);
 
+
     bool isAppRunning = true;
     while (isAppRunning)
     {
@@ -359,15 +359,18 @@ int main()
         if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
         if (specularTexture) graphics->SetTexture2D(4, specularTexture);
 
-        graphics->ClearRenderTargetView(ShadowRenderTarget, whiteColor);
+        graphics->ClearRenderTargetView(ShadowRenderTarget, blackColor);
 
-        graphics->SetRasterizerState(Rasterizer_pass1);
+        graphics->SetRasterizerState(shadowRasterizer);
         graphics->Draw(indexCount, 0);
-
-        graphics->Draw(planeIndexCount, 0);
          
 
- // PASS 1: model
+ // PASS 1: model and plane
+
+        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
+
+
             graphics->SetRenderTargetViews(gbufferRTVs, depthStencilView);
 
             graphics->ClearRenderTargetView(NormalRTV, clearColor);
@@ -406,6 +409,9 @@ int main()
 
             graphics->Draw(indexCount, 0);
 
+            //update const buffer with the plane world matrix
+       cameraData.worldMatrix = planeWorldMatrix;
+       graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
             graphics->Draw(planeIndexCount, 0);
 
 
