@@ -317,7 +317,15 @@ int main()
     std::vector<std::weak_ptr<RenderTargetView>> SahdowRTVS;
     SahdowRTVS.push_back(ShadowRenderTarget);
 
+    int shadowWidth = 2048;
+    int shadowHeight = 2048;
+    auto shadowDepthView = graphics->CreateShadowMap(shadowWidth, shadowHeight);
+    if (!shadowDepthView)
+    {
+        std::cout << "Failed to create shadow map" << std::endl;
+    }
 
+    /// Render loop
     bool isAppRunning = true;
     while (isAppRunning)
     {
@@ -341,11 +349,16 @@ int main()
 
  //// pass 0 shadow pre process 
 
-        graphics->SetRenderTargetViews(SahdowRTVS, depthStencilView);
-        graphics->ClearRenderTargetView(NormalRTV, clearColor);
-        graphics->ClearRenderTargetView(ColorRTV, clearColor);
-        graphics->ClearRenderTargetView(SpecularRTV, clearColor);
-        graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+        if (shadowDepthView)
+        {
+            graphics->SetRenderTargetViews(SahdowRTVS, shadowDepthView);
+            graphics->ClearDepthStencilView(shadowDepthView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+        }
+        else
+        {
+            graphics->SetRenderTargetViews(SahdowRTVS, depthStencilView);
+            graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+        }
 
         graphics->SetVertexShader(p_ShadowVertexshader);
         graphics->SetPixelShader(p_ShadowPixelShader);
@@ -359,11 +372,31 @@ int main()
         if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
         if (specularTexture) graphics->SetTexture2D(4, specularTexture);
 
+        // Clear render target used for shadow (if present)
         graphics->ClearRenderTargetView(ShadowRenderTarget, blackColor);
 
         graphics->SetRasterizerState(shadowRasterizer);
         graphics->Draw(indexCount, 0);
-         
+
+
+        if ( shadowDepthView)
+        {
+
+            float bias = 0.005f;
+            mathfu::Vector<float, 3> sampleWorldPos = mathfu::Vector<float, 3>(100.0f, 200.0f, 0.0f);
+            bool occluded = graphics->IsOccluded(shadowDepthView, sampleWorldPos, cameraData.ShadowView, cameraData.ShadowProjection, bias);
+
+            if (occluded)
+            {
+                std::cout << "Sample point is occluded by shadow map\n";
+            }
+            else
+            {
+                std::cout << "Sample point is lit\n";
+            }
+        }
+
+        graphics->SetShadowMapFromDepthView(5, shadowDepthView);
 
  // PASS 1: model and plane
 
