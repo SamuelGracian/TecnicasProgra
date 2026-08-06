@@ -1,6 +1,7 @@
 Texture2D NormalTexture : register(t2);
 Texture2D AlbedoTexture : register(t3);
 Texture2D SpecularTexture : register(t4);
+Texture2D ShadowMap : register(t5);
 SamplerState Sampler : register(s0);
 
 struct VSIn
@@ -65,6 +66,39 @@ RenderTargets PShader(PSIn input)
 
     float3 color = AlbedoTexture.Sample(Sampler, input.UV).rgb;
     float3 spec = SpecularTexture.Sample(Sampler, input.UV).rgb;
+    
+  // light
+    float3 lightDirection = normalize(float3(-1, 1, -1));
+    float3 ambient = color * 0.05f;
+
+    float ndl = max(dot(normal, -lightDirection), 0.0f);
+    float3 diffuse = ndl * color;
+
+    float3 viewDirection = normalize(float3(0, 0, 1));
+    float3 halfVector = normalize(lightDirection + viewDirection);
+    float specFactor = pow(max(dot(normal, halfVector), 0.0f), 16.0f);
+    float3 specular = specFactor * spec;
+
+    float4 lightSpacePos = mul(mul(ShadowProyection, ShadowView), float4(input.WorldPosition, 1.0f));
+
+   // shadow 
+    float2 shadowUV = lightSpacePos.xy / lightSpacePos.w * 0.5f + 0.5f;
+    float currentDepth = lightSpacePos.z / lightSpacePos.w * 0.5f + 0.5f;
+
+
+    float bias = max(0.005f * (1.0f - dot(normal, -lightDirection)), 0.0005f);
+
+
+    float shadow = 1.0f;
+    if (shadowUV.x >= 0.0f && shadowUV.x <= 1.0f && shadowUV.y >= 0.0f && shadowUV.y <= 1.0f)
+    {
+        float shadowDepth = ShadowMap.Sample(Sampler, shadowUV).r;
+        shadow = (currentDepth - bias) > shadowDepth ? 0.0f : 1.0f;
+       
+    }
+
+    diffuse *= shadow;
+    specular *= shadow;
 
     output.Normals = float4(normal * 0.5f + 0.5f, 1.0f);
     output.Color = float4(color, 1.0f);

@@ -133,78 +133,54 @@ int main()
     // ==========================================
     // MODEL LOAD WITH ASSIMP
     // ==========================================
-    std::vector<SimpleVertex> modelVertices;
+    std::vector<SimpleVertex> PistolVertices;
     std::vector<uint16_t> modelIndices;
 
     // drakefire_pistol_low
     // CubeFile
-    if (!graphics->ImportModelAsset_Assimp("Models/drakefire_pistol_low.obj", modelVertices, modelIndices))
+
+    /// Pistol model
+    if (!graphics->ImportModelAsset_Assimp("Models/drakefire_pistol_low.obj", PistolVertices, modelIndices))
     {
         std::cout << "Failed on Load model" << std::endl;
         return -1;
     }
 
-    std::shared_ptr<VertexBuffer> p_vertexBuffer = nullptr;
-    std::shared_ptr<IndexBuffer> p_indexBuffer = nullptr;
-    uint32_t indexCount = 0;
-
-    if (!modelVertices.empty() && !modelIndices.empty())
+    /// Cube model
+    std::vector<SimpleVertex> CubeVertices;
+    std::vector<uint16_t> CubeIndices;
+    if (!graphics->ImportModelAsset_Assimp("Models/CubeFile.obj", PistolVertices, CubeIndices))
     {
-        p_vertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * modelVertices.size(), modelVertices.data());
-        p_indexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * modelIndices.size(), modelIndices.data(), modelIndices.size());
-        indexCount = modelIndices.size();
+        std::cout << "Failed on Load model" << std::endl;
+        return -1;
+    }
+    mathfu::Matrix<float, 4, 4> cubeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
+
+
+    std::shared_ptr<VertexBuffer> p_pistolVertexBuffer = nullptr;
+    std::shared_ptr<IndexBuffer> p_pistolIndexBuffer = nullptr;
+
+    std::shared_ptr<VertexBuffer> p_cubeVertexBuffer = nullptr;
+    std::shared_ptr<IndexBuffer> p_cubeIndexBuffer = nullptr;
+    uint32_t pistolIndexCount = 0;
+    uint32_t cubeIndexCount = 0;
+
+    if (!PistolVertices.empty() && !modelIndices.empty())
+    {
+        p_pistolVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * PistolVertices.size(), PistolVertices.data());
+        p_pistolIndexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * modelIndices.size(), modelIndices.data(), modelIndices.size());
+
+        p_cubeVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * CubeVertices.size(), CubeVertices.data());
+        p_cubeIndexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * CubeIndices.size(), CubeIndices.data(), CubeIndices.size());
+
+        pistolIndexCount = modelIndices.size() ;
+        cubeIndexCount = CubeIndices.size();
     }
     else 
     {
         std::cout << "Failed to construct buffers" << std::endl;
         return -1;
     }
-
-
-    // ==========================================
-   // Vertices floor
-  //==========================================
-    std::vector<SimpleVertex> planeVertices(4);
-
-    planeVertices[0].Pos = mathfu::Vector<float, 4>(-1.0f, 0.0f, -1.0f, 1.0f);
-    planeVertices[0].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
-    planeVertices[0].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
-    planeVertices[0].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[0].Tex = mathfu::Vector<float, 2>(0.0f, 0.0f);
-
-    planeVertices[1].Pos = mathfu::Vector<float, 4>(-1.0f, 0.0f, 1.0f, 1.0f);
-    planeVertices[1].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
-    planeVertices[1].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
-    planeVertices[1].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[1].Tex = mathfu::Vector<float, 2>(0.0f, 1.0f);
-
-    planeVertices[2].Pos = mathfu::Vector<float, 4>(1.0f, 0.0f, 1.0f, 1.0f);
-    planeVertices[2].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
-    planeVertices[2].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
-    planeVertices[2].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[2].Tex = mathfu::Vector<float, 2>(1.0f, 1.0f);
-
-    planeVertices[3].Pos = mathfu::Vector<float, 4>(1.0f, 0.0f, -1.0f, 1.0f);
-    planeVertices[3].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
-    planeVertices[3].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
-    planeVertices[3].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[3].Tex = mathfu::Vector<float, 2>(1.0f, 0.0f);
-
-    uint16_t planeIndices[] =
-    {
-        0, 1, 2,
-        0, 2, 3
-    };
-
-    std::shared_ptr<VertexBuffer> planeVB =
-        graphics->CreateVertexBuffer(sizeof(SimpleVertex) * planeVertices.size(), planeVertices.data());
-
-    std::shared_ptr<IndexBuffer> planeIB =
-        graphics->CreateIndexBuffer(sizeof(uint16_t) * 6, planeIndices, 6);
-
-    uint32_t planeIndexCount = 6;
-
-    mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
 
     //topology
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
@@ -363,8 +339,8 @@ int main()
         graphics->SetVertexShader(p_ShadowVertexshader);
         graphics->SetPixelShader(p_ShadowPixelShader);
         graphics->SetTopology(p_topology);
-        graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex), 0);
-        graphics->SetIndexBuffer(p_indexBuffer);
+        graphics->SetVertexBuffer(p_pistolVertexBuffer, sizeof(SimpleVertex), 0);
+        graphics->SetIndexBuffer(p_pistolIndexBuffer);
         graphics->SetConstantBuffer(constantBuffer);
         graphics->SetSampler(0, mySampler);
 
@@ -376,25 +352,25 @@ int main()
         graphics->ClearRenderTargetView(ShadowRenderTarget, blackColor);
 
         graphics->SetRasterizerState(shadowRasterizer);
-        graphics->Draw(indexCount, 0);
+        graphics->Draw(cubeIndexCount, 0);
 
 
-        if ( shadowDepthView)
-        {
+        //if ( shadowDepthView)
+        //{
 
-            float bias = 0.005f;
-            mathfu::Vector<float, 3> sampleWorldPos = mathfu::Vector<float, 3>(100.0f, 200.0f, 0.0f);
-            bool occluded = graphics->IsOccluded(shadowDepthView, sampleWorldPos, cameraData.ShadowView, cameraData.ShadowProjection, bias);
+        //    float bias = 0.005f;
+        //    mathfu::Vector<float, 3> sampleWorldPos = mathfu::Vector<float, 3>(100.0f, 200.0f, 0.0f);
+        //    bool occluded = graphics->IsOccluded(shadowDepthView, sampleWorldPos, cameraData.ShadowView, cameraData.ShadowProjection, bias);
 
-            if (occluded)
-            {
-                std::cout << "Sample point is occluded by shadow map\n";
-            }
-            else
-            {
-                std::cout << "Sample point is lit\n";
-            }
-        }
+        //    if (occluded)
+        //    {
+        //        std::cout << "Sample point is occluded by shadow map\n";
+        //    }
+        //    else
+        //    {
+        //        std::cout << "Sample point is lit\n";
+        //    }
+        //}
 
         graphics->SetShadowMapFromDepthView(5, shadowDepthView);
 
@@ -415,8 +391,8 @@ int main()
             graphics->SetPixelShader(p_pixelShader_1);
 
             graphics->SetTopology(p_topology);
-            graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex), 0);
-            graphics->SetIndexBuffer(p_indexBuffer);
+            graphics->SetVertexBuffer(p_pistolVertexBuffer, sizeof(SimpleVertex), 0);
+            graphics->SetIndexBuffer(p_pistolIndexBuffer);
             graphics->SetConstantBuffer(constantBuffer);
 
             graphics->SetSampler(0, mySampler);
@@ -440,12 +416,12 @@ int main()
             }
             graphics->SetRasterizerState(Rasterizer_pass1);
 
-            graphics->Draw(indexCount, 0);
+            graphics->Draw(pistolIndexCount, 0);
 
             //update const buffer with the plane world matrix
-       cameraData.worldMatrix = planeWorldMatrix;
+       cameraData.worldMatrix = cubeWorldMatrix;
        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
-            graphics->Draw(planeIndexCount, 0);
+            graphics->Draw(cubeIndexCount, 0);
 
 
      // PASS 2: quad -> backbuffer
