@@ -286,9 +286,8 @@ int main()
     std::vector<std::weak_ptr<RenderTargetView>> SahdowRTVS;
     SahdowRTVS.push_back(ShadowRenderTarget);
 
-    int shadowWidth = 800;
-    int shadowHeight = 600;
-    auto shadowDepthView = graphics->CreateShadowMap(shadowWidth, shadowHeight);
+ 
+    auto shadowDepthView = graphics->CreateShadowMap(window->GetClientWidth(), window->GetClientHeight());
     if (!shadowDepthView)
     {
         std::cout << "Failed to create shadow map" << std::endl;
