@@ -149,13 +149,13 @@ int main()
     /// Cube model
     std::vector<SimpleVertex> CubeVertices;
     std::vector<uint16_t> CubeIndices;
-    if (!graphics->ImportModelAsset_Assimp("Models/CubeFile.obj", PistolVertices, CubeIndices))
+    if (!graphics->ImportModelAsset_Assimp("Models/CubeFile.obj", CubeVertices, CubeIndices))
     {
         std::cout << "Failed on Load model" << std::endl;
         return -1;
     }
-    mathfu::Matrix<float, 4, 4> cubeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
-
+    // cubo usado como piso: ancho/profundo reducidos, muy delgado en Y
+    mathfu::Matrix<float, 4, 4> cubeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector( mathfu::Vector<float, 3>(10.0f, 0.25f, 10.0f)) * mathfu::Matrix<float, 4, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0.0f, -0.25f, 0.0f));
 
     std::shared_ptr<VertexBuffer> p_pistolVertexBuffer = nullptr;
     std::shared_ptr<IndexBuffer> p_pistolIndexBuffer = nullptr;
@@ -189,18 +189,8 @@ int main()
     int32_t imgHeight = 0;
     int32_t imgChannels = 0;
     
-    //load texture
-    std::vector<uint8_t> pixels = graphics->LoadImageFromFile("textures/rocks.jpg", &imgWidth, &imgHeight, &imgChannels);
-    
-    std::shared_ptr<Texture2D> myTexture = nullptr;
-    if (!pixels.empty()) 
-    {
-        myTexture = graphics->CreateTexture2D(pixels, imgWidth, imgHeight);
-    }
-    else 
-    {
-        std::cout << "Error: Texture couldn't be loaded" << std::endl;
-    }
+    // Cube texture
+    std::shared_ptr<Texture2D> cubeTexture = graphics->CreateTexture2DFromFile("Textures/rocks.jpg");
 
     //normals
     std::shared_ptr<Texture2D> normalTexture = graphics->CreateTexture2DFromFile("Textures/base_normal.jpg");
@@ -293,8 +283,8 @@ int main()
     std::vector<std::weak_ptr<RenderTargetView>> SahdowRTVS;
     SahdowRTVS.push_back(ShadowRenderTarget);
 
-    int shadowWidth = 2048;
-    int shadowHeight = 2048;
+    int shadowWidth = 800;
+    int shadowHeight = 600;
     auto shadowDepthView = graphics->CreateShadowMap(shadowWidth, shadowHeight);
     if (!shadowDepthView)
     {
@@ -352,8 +342,13 @@ int main()
         graphics->ClearRenderTargetView(ShadowRenderTarget, blackColor);
 
         graphics->SetRasterizerState(shadowRasterizer);
-        graphics->Draw(cubeIndexCount, 0);
+        graphics->Draw(pistolIndexCount, 0);
 
+
+        graphics->SetVertexBuffer(p_cubeVertexBuffer, sizeof(SimpleVertex), 0);
+        graphics->SetIndexBuffer(p_cubeIndexBuffer);
+        graphics->SetConstantBuffer(constantBuffer);
+        graphics->Draw(cubeIndexCount, 0);
 
         //if ( shadowDepthView)
         //{
@@ -418,9 +413,13 @@ int main()
 
             graphics->Draw(pistolIndexCount, 0);
 
-            //update const buffer with the plane world matrix
-       cameraData.worldMatrix = cubeWorldMatrix;
-       graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
+            //update const buffer with the cube world matrix
+            cameraData.worldMatrix = cubeWorldMatrix;
+            graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
+
+            if (cubeTexture) graphics->SetTexture2D(3, cubeTexture);
+            graphics->SetVertexBuffer(p_cubeVertexBuffer, sizeof(SimpleVertex), 0);
+            graphics->SetIndexBuffer(p_cubeIndexBuffer);
             graphics->Draw(cubeIndexCount, 0);
 
 

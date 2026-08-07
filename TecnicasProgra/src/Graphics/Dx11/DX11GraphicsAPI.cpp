@@ -1059,7 +1059,8 @@ bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::
         return false;
     }
 
-    for (unsigned int meshIndex = scene->mNumMeshes -1 ; meshIndex != 0; meshIndex--)
+    //for (unsigned int meshIndex = scene->mNumMeshes -1 ; meshIndex != 0; meshIndex--)
+    for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex)
     {
         aiMesh* mesh = scene->mMeshes[meshIndex];
         if (!mesh)
