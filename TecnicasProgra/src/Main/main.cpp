@@ -154,8 +154,11 @@ int main()
         std::cout << "Failed on Load model" << std::endl;
         return -1;
     }
-    // cubo usado como piso: ancho/profundo reducidos, muy delgado en Y
-    mathfu::Matrix<float, 4, 4> cubeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector( mathfu::Vector<float, 3>(10.0f, 0.25f, 10.0f)) * mathfu::Matrix<float, 4, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0.0f, -0.25f, 0.0f));
+   
+    mathfu::Matrix<float, 4, 4> cubeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector( mathfu::Vector<float, 3>(-100.0f, -0.0f, 50.0f)) * mathfu::Matrix<float, 4, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0.0f, -0.25f, 0.0f));
+
+
+
 
     std::shared_ptr<VertexBuffer> p_pistolVertexBuffer = nullptr;
     std::shared_ptr<IndexBuffer> p_pistolIndexBuffer = nullptr;
