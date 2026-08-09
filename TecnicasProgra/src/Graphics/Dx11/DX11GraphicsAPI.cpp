@@ -585,7 +585,7 @@ std::shared_ptr<VertexBuffer> DX11GraphicsAPI::CreateVertexBuffer(const uint32_t
     bd.ByteWidth = bytewidth;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    bd.StructureByteStride = 24;
+    bd.StructureByteStride = 0;
 
     D3D11_SUBRESOURCE_DATA InitData = {};
     InitData.pSysMem = vertices;

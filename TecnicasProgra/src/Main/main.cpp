@@ -157,9 +157,6 @@ int main()
    
     mathfu::Matrix<float, 4, 4> cubeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector( mathfu::Vector<float, 3>(-100.0f, -0.0f, 50.0f)) * mathfu::Matrix<float, 4, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0.0f, -0.25f, 0.0f));
 
-
-
-
     std::shared_ptr<VertexBuffer> p_pistolVertexBuffer = nullptr;
     std::shared_ptr<IndexBuffer> p_pistolIndexBuffer = nullptr;
 

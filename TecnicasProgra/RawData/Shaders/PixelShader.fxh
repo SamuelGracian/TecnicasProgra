@@ -42,17 +42,13 @@ cbuffer ViewProjection : register(b0)
 PSIn VShader(VSIn input)
 {
     PSIn output;
-
     float4x4 viewProjection = mul(mul(Projection, View), world);
-    output.position = mul(viewProjection, input.position);
-
-    output.WorldPosition = mul(world, input.position).xyz;
+    output.position = mul(viewProjection, float4(input.position.xyz, 1));
     output.UV = input.UV;
-
+    output.WorldPosition = mul(world, input.position).xyz;
     float3 n = normalize(mul(world, float4(input.Normals.xyz, 0)).xyz);
     float3 b = normalize(mul(world, float4(input.Binormal.xyz, 0)).xyz);
     float3 t = normalize(mul(world, float4(input.Tangents.xyz, 0)).xyz);
-
     output.TBNmatrix = transpose(float3x3(t, b, n));
     return output;
 }
