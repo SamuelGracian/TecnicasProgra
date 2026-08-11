@@ -182,7 +182,7 @@ int main()
 
    /// Model world matrix 
     float time = 0.0f;
-    mathfu::Matrix <float, 4 > modelWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
+    mathfu::Matrix <float, 4 > modelWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(80, 80, 80));
     mathfu::Matrix<float, 4, 4> modelWorldTransformation = mathfu::Matrix<float, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0.0f, 0.0f, 0.0f));
 
     //topology
@@ -344,8 +344,8 @@ int main()
     p_planeVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * planeVertices.size(), planeVertices.data());
 
 
-    mathfu::Vector<float, 3>  planePosition(0.0f, 00.0f, -500.0f);
-    mathfu::Vector<float, 3>  planeScale(100.0f,100.0f,100.0f);
+    mathfu::Vector<float, 3>  planePosition(0.0f, 00.0f, -8000.0f);
+    mathfu::Vector<float, 3>  planeScale(500.0f,500.0f,500.0f);
     
     ///Plane world Matrix 
     mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4>::FromTranslationVector(planePosition) * mathfu::Matrix<float, 4>::FromScaleVector(planeScale);
@@ -430,18 +430,15 @@ int main()
         cameraData.worldMatrix = planeWorldMatrix;
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
-        // asegurarse de usar los shaders/estado correctos para el G-buffer
         graphics->SetVertexShader(p_vertexShader_1);
         graphics->SetPixelShader(p_pixelShader_1);
         graphics->SetTopology(p_topology);
         graphics->SetSampler(0, mySampler);
 
-        // textures para el plano 
         graphics->SetTexture2D(2, normalTexture ? normalTexture : defaultNormalTexture);
         graphics->SetTexture2D(3, cubeTexture ? cubeTexture : defaultAlbedoTexture);
         graphics->SetTexture2D(4, specularTexture ? specularTexture : defaultSpecularTexture);
 
-        // rasterizer sin culling para debug del plano 
         graphics->SetRasterizerState(Rasterizer_pass2);
 
         graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
@@ -472,8 +469,6 @@ int main()
         graphics->SetIndexBuffer(p_pistolIndexBuffer);
         graphics->SetConstantBuffer(constantBuffer);
         graphics->Draw(pistolIndexCount, 0);
-
-            
 
 
      // PASS 2: quad -> backbuffer
