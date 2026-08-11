@@ -197,7 +197,7 @@ int main()
     
     // Cube texture
     std::shared_ptr<Texture2D> cubeTexture = nullptr;
-    if (cubeTexture = graphics->CreateTexture2DFromFile("Textures/rocks.jpg"))
+    if (cubeTexture = graphics->CreateTexture2DFromFile("RawData/Textures/rocks.jpg"))
     {
         std::cout << "Cube texture created " << std::endl;
     }
@@ -377,11 +377,14 @@ int main()
             graphics->SetRenderTargetViews(SahdowRTVS, shadowDepthView);
             graphics->ClearDepthStencilView(shadowDepthView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
         }
+<<<<<<< Updated upstream
         else
         {
             graphics->SetRenderTargetViews(SahdowRTVS, depthStencilView);
             graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
         }
+=======
+>>>>>>> Stashed changes
 
         graphics->SetVertexShader(p_ShadowVertexshader);
         graphics->SetPixelShader(p_ShadowPixelShader);
@@ -417,6 +420,9 @@ int main()
         //        std::cout << "Sample point is lit\n";
         //    }
         //}
+
+        std::vector<std::weak_ptr<RenderTargetView>> emptyRTVs;
+        graphics->SetRenderTargetViews(emptyRTVs, std::weak_ptr<DepthStencilView>());
 
         graphics->SetShadowMapFromDepthView(5, shadowDepthView);
 
@@ -454,6 +460,8 @@ int main()
         cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
+            
+            graphics->SetTexture2D(5, std::weak_ptr<Texture2D>());
 
             graphics->SetRenderTargetViews(gbufferRTVs, depthStencilView);
 
