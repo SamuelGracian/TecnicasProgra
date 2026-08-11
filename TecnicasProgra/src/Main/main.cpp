@@ -142,7 +142,7 @@ int main()
     // CubeFile
 
     /// Pistol model
-    if (!graphics->ImportModelAsset_Assimp("Models/drakefire_pistol_low.obj", PistolVertices, modelIndices))
+    if (!graphics->ImportModelAsset_Assimp("RawData/Models/drakefire_pistol_low.obj", PistolVertices, modelIndices))
     {
         std::cout << "Failed on Load model" << std::endl;
         return -1;
@@ -151,12 +151,12 @@ int main()
     /// Cube model
     std::vector<SimpleVertex> CubeVertices;
     std::vector<uint16_t> CubeIndices;
-    if (!graphics->ImportModelAsset_Assimp("Models/CubeFile.obj", CubeVertices, CubeIndices))
+ /*   if (!graphics->ImportModelAsset_Assimp("Models/CubeFile.obj", CubeVertices, CubeIndices))
     {
         std::cout << "Failed on Load model" << std::endl;
         return -1;
     }
-  
+  */
 
     std::shared_ptr<VertexBuffer> p_pistolVertexBuffer = nullptr;
     std::shared_ptr<IndexBuffer> p_pistolIndexBuffer = nullptr;
@@ -171,9 +171,6 @@ int main()
         p_pistolVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * PistolVertices.size(), PistolVertices.data());
         p_pistolIndexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * modelIndices.size(), modelIndices.data(), modelIndices.size());
 
-        p_cubeVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * CubeVertices.size(), CubeVertices.data());
-        p_cubeIndexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * CubeIndices.size(), CubeIndices.data(), CubeIndices.size());
-
         pistolIndexCount = modelIndices.size() ;
         cubeIndexCount = CubeIndices.size();
     }
@@ -182,6 +179,11 @@ int main()
         std::cout << "Failed to construct buffers" << std::endl;
         return -1;
     }
+
+   /// Model world matrix 
+    float time = 0.0f;
+    mathfu::Matrix <float, 4 > modelWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(100, 100, 100));
+    mathfu::Matrix<float, 4 > modelWorldRotation = mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
 
     //topology
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
@@ -203,22 +205,22 @@ int main()
     }
 
     //normals
-    std::shared_ptr<Texture2D> normalTexture = graphics->CreateTexture2DFromFile("Textures/base_normal.jpg");
+    std::shared_ptr<Texture2D> normalTexture = graphics->CreateTexture2DFromFile("RawData/Textures/base_normal.jpg");
 
     //Sampler state
     std::shared_ptr<SamplerState> mySampler = graphics->CreateSamplerState();
 
     //albedo 
-    std::shared_ptr <Texture2D> albedoTexture = graphics->CreateTexture2DFromFile("Textures/drakefire_pistol_low_a.jpg");
+    std::shared_ptr <Texture2D> albedoTexture = graphics->CreateTexture2DFromFile("RawData/Textures/drakefire_pistol_low_a.jpg");
 
     //specular texture
-    std::shared_ptr<Texture2D> specularTexture = graphics->CreateTexture2DFromFile("Textures/base_metallic.jpg");
+    std::shared_ptr<Texture2D> specularTexture = graphics->CreateTexture2DFromFile("RawData/Textures/base_metallic.jpg");
 
     float clearColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
     float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
 
-    float time = 0.0f; 
+ 
     auto previous = std::chrono::high_resolution_clock::now();
 
     ////
@@ -362,14 +364,9 @@ int main()
         float deltaTime = elapsed.count();
         time += deltaTime;
 
-
-        //moveData.cosValue = std::cos(time);
-        moveData.amplitude = amplitude;
-
  //// pass 0 shadow pre process 
 
-        cameraData.worldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(100, 100, 100)); /// Model scale
-        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
+        cameraData.worldMatrix = modelWorldScale * modelWorldRotation ;
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
         if (shadowDepthView)
@@ -377,11 +374,11 @@ int main()
             graphics->SetRenderTargetViews(SahdowRTVS, shadowDepthView);
             graphics->ClearDepthStencilView(shadowDepthView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
         }
-        else
-        {
-            graphics->SetRenderTargetViews(SahdowRTVS, depthStencilView);
-            graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
-        }
+        //else
+        //{
+        //    graphics->SetRenderTargetViews(SahdowRTVS, depthStencilView);
+        //    graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+        //}
 
         graphics->SetVertexShader(p_ShadowVertexshader);
         graphics->SetPixelShader(p_ShadowPixelShader);

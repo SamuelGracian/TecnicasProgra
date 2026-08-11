@@ -29,6 +29,11 @@ include_directories(${MATHFU_PATH}/include ${MATHFU_PATH}/dependecies/vectorial/
 target_link_libraries(Graphics PRIVATE "${assimp_ROOT}/build/lib/Debug/assimp-vc143-mtd.lib")
 
 add_custom_command(TARGET Graphics POST_BUILD
+
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${assimp_ROOT}/build/bin/Debug/assimp-vc143-mtd.dll"
+    "$<TARGET_FILE_DIR:Graphics>"
+
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/RawData"
     "$<TARGET_FILE_DIR:Graphics>/RawData"
