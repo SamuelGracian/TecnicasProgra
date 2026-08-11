@@ -64,13 +64,15 @@ struct QuadVertex
     float u, v;
 };
 
+std::vector<uint8_t> neutralNormal = { 127, 127, 255, 255 };
+std::vector<uint8_t> whitePixel = { 255, 255, 255, 255 };
 
 int main()
 {
     uint32_t width = 800;
     uint32_t height = 600;
 
-    mathfu::Vector<float,3> Eye(100.0f, 100.0f, 200.0f); 
+    mathfu::Vector<float,3> Eye(100.0f, 100.0f, 500.0f); 
     mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
@@ -154,8 +156,7 @@ int main()
         std::cout << "Failed on Load model" << std::endl;
         return -1;
     }
-   
-    mathfu::Matrix<float, 4, 4> cubeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector( mathfu::Vector<float, 3>(-100.0f, -0.0f, 50.0f)) * mathfu::Matrix<float, 4, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0.0f, -0.25f, 0.0f));
+  
 
     std::shared_ptr<VertexBuffer> p_pistolVertexBuffer = nullptr;
     std::shared_ptr<IndexBuffer> p_pistolIndexBuffer = nullptr;
@@ -188,6 +189,11 @@ int main()
     int32_t imgWidth = 0;
     int32_t imgHeight = 0;
     int32_t imgChannels = 0;
+
+    ///Default textures
+    auto defaultNormalTexture = graphics->CreateTexture2D(neutralNormal, 1, 1);
+    auto defaultAlbedoTexture = graphics->CreateTexture2D(whitePixel, 1, 1);
+    auto defaultSpecularTexture = graphics->CreateTexture2D(whitePixel, 1, 1);
     
     // Cube texture
     std::shared_ptr<Texture2D> cubeTexture = graphics->CreateTexture2DFromFile("Textures/rocks.jpg");
@@ -289,6 +295,55 @@ int main()
     {
         std::cout << "Failed to create shadow map" << std::endl;
     }
+    
+    //////////////////
+    std::vector<SimpleVertex> planeVertices =
+    {
+        SimpleVertex(mathfu::Vector<float,4>{-1.0f,  1.0f, 0.0f, 1.0f},
+                     mathfu::Vector<float,4>{0.0f, 1.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{1.0f, 0.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{0.0f, 0.0f, 1.0f, 0.0f},
+                     mathfu::Vector<float,2>{0.0f, 0.0f}),
+
+        SimpleVertex(mathfu::Vector<float,4>{ 1.0f,  1.0f, 0.0f, 1.0f},
+                     mathfu::Vector<float,4>{0.0f, 1.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{1.0f, 0.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{0.0f, 0.0f, 1.0f, 0.0f},
+                     mathfu::Vector<float,2>{1.0f, 0.0f}),
+
+        SimpleVertex(mathfu::Vector<float,4>{ 1.0f, -1.0f, 0.0f, 1.0f},
+                     mathfu::Vector<float,4>{0.0f, 1.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{1.0f, 0.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{0.0f, 0.0f, 1.0f, 0.0f},
+                     mathfu::Vector<float,2>{1.0f, 1.0f}),
+
+        SimpleVertex(mathfu::Vector<float,4>{-1.0f, -1.0f, 0.0f, 1.0f},
+                     mathfu::Vector<float,4>{0.0f, 1.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{1.0f, 0.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{0.0f, 0.0f, 1.0f, 0.0f},
+                     mathfu::Vector<float,2>{0.0f, 1.0f}),
+        
+    };
+
+    std::vector<uint16_t> planeIndices =
+    {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    std::shared_ptr<IndexBuffer> p_planeIndexBuffer = nullptr;
+    p_planeIndexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * planeIndices.size(), planeIndices.data(), planeIndices.size());
+
+    std::shared_ptr<VertexBuffer> p_planeVertexBuffer = nullptr;
+    p_planeVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * planeVertices.size(), planeVertices.data());
+
+
+    mathfu::Vector<float, 3>  planePosition(-100.0f, 100.0f, 50.0f);
+    mathfu::Vector<float, 3>  planeScale(20.0f,20.0f,1.0f);
+    
+    ///Plane world Matrix 
+    mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4>::FromTranslationVector(planePosition) * mathfu::Matrix<float, 4>::FromScaleVector(planeScale);
+
 
     /// Render loop
     bool isAppRunning = true;
@@ -344,10 +399,19 @@ int main()
         graphics->Draw(pistolIndexCount, 0);
 
 
-        graphics->SetVertexBuffer(p_cubeVertexBuffer, sizeof(SimpleVertex), 0);
-        graphics->SetIndexBuffer(p_cubeIndexBuffer);
+        cameraData.worldMatrix = planeWorldMatrix;
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
+
+        if (!normalTexture) graphics->SetTexture2D(2, cubeTexture);
+
+        if (!albedoTexture && !cubeTexture) graphics->SetTexture2D(3, cubeTexture);
+
+        if (!specularTexture) graphics->SetTexture2D(4, cubeTexture);
+
+        graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
+        graphics->SetIndexBuffer(p_planeIndexBuffer);
         graphics->SetConstantBuffer(constantBuffer);
-        graphics->Draw(cubeIndexCount, 0);
+        graphics->Draw(6, 0);
 
         //if ( shadowDepthView)
         //{
@@ -413,13 +477,19 @@ int main()
             graphics->Draw(pistolIndexCount, 0);
 
             //update const buffer with the cube world matrix
-            cameraData.worldMatrix = cubeWorldMatrix;
+            cameraData.worldMatrix = planeWorldMatrix;
             graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
-            if (cubeTexture) graphics->SetTexture2D(3, cubeTexture);
-            graphics->SetVertexBuffer(p_cubeVertexBuffer, sizeof(SimpleVertex), 0);
-            graphics->SetIndexBuffer(p_cubeIndexBuffer);
-            graphics->Draw(cubeIndexCount, 0);
+
+            if (!normalTexture) graphics->SetTexture2D(2, cubeTexture);
+
+            if (!albedoTexture && !cubeTexture) graphics->SetTexture2D(3, cubeTexture);
+
+            if (!specularTexture) graphics->SetTexture2D(4, cubeTexture);
+
+            graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
+            graphics->SetIndexBuffer(p_planeIndexBuffer);
+            graphics->Draw(6, 0);
 
 
      // PASS 2: quad -> backbuffer

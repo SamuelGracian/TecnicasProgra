@@ -30,6 +30,16 @@ struct SimpleVertex
 	mathfu::Vector<float, 4> Tangent;
 	mathfu::Vector<float, 4> Binormal;
 	mathfu::Vector<float, 2> Tex; // UVs
+
+	SimpleVertex(
+		const mathfu::Vector<float, 4>& pos = mathfu::Vector<float, 4>(),
+		const mathfu::Vector<float, 4>& normals = mathfu::Vector<float, 4>(),
+		const mathfu::Vector<float, 4>& tangent = mathfu::Vector<float, 4>(),
+		const mathfu::Vector<float, 4>& binormal = mathfu::Vector<float, 4>(),
+		const mathfu::Vector<float, 2>& tex = mathfu::Vector<float, 2>())
+		: Pos(pos), Normals(normals), Tangent(tangent), Binormal(binormal), Tex(tex)
+	{
+	}
 };
 
 
