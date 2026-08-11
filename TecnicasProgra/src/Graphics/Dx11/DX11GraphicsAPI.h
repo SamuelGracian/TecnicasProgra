@@ -2,6 +2,8 @@
 #include "Graphics/GraphicsAPI.h"
 #include "Graphics/GraphicGenerals.h"
 #include "Display/Window.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 
 #include <memory>
 #include <d3d11.h>
@@ -99,6 +101,12 @@ public:
 
   void SetRasterizerState(std::weak_ptr <RasterizerState> rasterizer) override;
 
+
+public:
+  bool IsOccluded(std::weak_ptr<DepthStencilView> shadowDepthView, const mathfu::Vector<float, 3>& worldPos, const mathfu::Matrix<float, 4, 4>& shadowView, const mathfu::Matrix<float, 4, 4>& shadowProj, float bias = 0.005f) override ;
+  
+  void SetShadowMapFromDepthView(uint32_t slot, std::weak_ptr<DepthStencilView> shadowDepthView);
+
 private:
 
 	// Internal functions
@@ -114,7 +122,13 @@ private:
   /// normals
   std::shared_ptr<Texture2D> CreateTexture2DFromFile(const std::string& filepath) override;
 
+  /// Shadow Map
 
+  std::shared_ptr<DepthStencilView> CreateShadowMap(uint32_t width = 0, uint32_t height = 0) override;
+
+  bool ReadShadowMap(std::weak_ptr<DepthStencilView> shadowDepthView, std::vector<float>&outDepth) override;
+
+  void SetShadowMap(uint32_t slot, std::weak_ptr<Texture2D> shadowMapTexture) override;
 
  private:
   ID3D11Device* m_device = nullptr;

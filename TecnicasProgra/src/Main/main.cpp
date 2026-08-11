@@ -64,13 +64,15 @@ struct QuadVertex
     float u, v;
 };
 
+std::vector<uint8_t> neutralNormal = { 127, 127, 255, 255 };
+std::vector<uint8_t> whitePixel = { 255, 255, 255, 255 };
 
 int main()
 {
     uint32_t width = 800;
     uint32_t height = 600;
 
-    mathfu::Vector<float,3> Eye(100.0f, 100.0f, 200.0f); 
+    mathfu::Vector<float,3> Eye(20.0f, 0.0f, 500.0f); 
     mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
@@ -79,7 +81,7 @@ int main()
 
 
     ///Second Camera
-    mathfu::Vector<float, 3> LightEye ( 100.0f, 100.0f, 200.0f);
+    mathfu::Vector<float, 3> LightEye  = Eye;
 
     mathfu::Vector<float, 3> LightDirection = (At - LightEye).Normalized();
 
@@ -133,26 +135,47 @@ int main()
     // ==========================================
     // MODEL LOAD WITH ASSIMP
     // ==========================================
-    std::vector<SimpleVertex> modelVertices;
+    std::vector<SimpleVertex> PistolVertices;
     std::vector<uint16_t> modelIndices;
 
     // drakefire_pistol_low
     // CubeFile
-    if (!graphics->ImportModelAsset_Assimp("Models/drakefire_pistol_low.obj", modelVertices, modelIndices))
+
+    /// Pistol model
+    if (!graphics->ImportModelAsset_Assimp("Models/drakefire_pistol_low.obj", PistolVertices, modelIndices))
     {
         std::cout << "Failed on Load model" << std::endl;
         return -1;
     }
 
-    std::shared_ptr<VertexBuffer> p_vertexBuffer = nullptr;
-    std::shared_ptr<IndexBuffer> p_indexBuffer = nullptr;
-    uint32_t indexCount = 0;
-
-    if (!modelVertices.empty() && !modelIndices.empty())
+    /// Cube model
+    std::vector<SimpleVertex> CubeVertices;
+    std::vector<uint16_t> CubeIndices;
+    if (!graphics->ImportModelAsset_Assimp("Models/CubeFile.obj", CubeVertices, CubeIndices))
     {
-        p_vertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * modelVertices.size(), modelVertices.data());
-        p_indexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * modelIndices.size(), modelIndices.data(), modelIndices.size());
-        indexCount = modelIndices.size();
+        std::cout << "Failed on Load model" << std::endl;
+        return -1;
+    }
+  
+
+    std::shared_ptr<VertexBuffer> p_pistolVertexBuffer = nullptr;
+    std::shared_ptr<IndexBuffer> p_pistolIndexBuffer = nullptr;
+
+    std::shared_ptr<VertexBuffer> p_cubeVertexBuffer = nullptr;
+    std::shared_ptr<IndexBuffer> p_cubeIndexBuffer = nullptr;
+    uint32_t pistolIndexCount = 0;
+    uint32_t cubeIndexCount = 0;
+
+    if (!PistolVertices.empty() && !modelIndices.empty())
+    {
+        p_pistolVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * PistolVertices.size(), PistolVertices.data());
+        p_pistolIndexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * modelIndices.size(), modelIndices.data(), modelIndices.size());
+
+        p_cubeVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * CubeVertices.size(), CubeVertices.data());
+        p_cubeIndexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * CubeIndices.size(), CubeIndices.data(), CubeIndices.size());
+
+        pistolIndexCount = modelIndices.size() ;
+        cubeIndexCount = CubeIndices.size();
     }
     else 
     {
@@ -160,70 +183,23 @@ int main()
         return -1;
     }
 
-
-    // ==========================================
-   // Vertices floor
-  //==========================================
-    std::vector<SimpleVertex> planeVertices(4);
-
-    planeVertices[0].Pos = mathfu::Vector<float, 4>(-1.0f, 0.0f, -1.0f, 1.0f);
-    planeVertices[0].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
-    planeVertices[0].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
-    planeVertices[0].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[0].Tex = mathfu::Vector<float, 2>(0.0f, 0.0f);
-
-    planeVertices[1].Pos = mathfu::Vector<float, 4>(-1.0f, 0.0f, 1.0f, 1.0f);
-    planeVertices[1].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
-    planeVertices[1].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
-    planeVertices[1].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[1].Tex = mathfu::Vector<float, 2>(0.0f, 1.0f);
-
-    planeVertices[2].Pos = mathfu::Vector<float, 4>(1.0f, 0.0f, 1.0f, 1.0f);
-    planeVertices[2].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
-    planeVertices[2].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
-    planeVertices[2].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[2].Tex = mathfu::Vector<float, 2>(1.0f, 1.0f);
-
-    planeVertices[3].Pos = mathfu::Vector<float, 4>(1.0f, 0.0f, -1.0f, 1.0f);
-    planeVertices[3].Normals = mathfu::Vector<float, 4>(0.0f, 1.0f, 0.0f, 0.0f);
-    planeVertices[3].Tangent = mathfu::Vector<float, 4>(1.0f, 0.0f, 0.0f, 0.0f);
-    planeVertices[3].Binormal = mathfu::Vector<float, 4>(0.0f, 0.0f, 1.0f, 0.0f);
-    planeVertices[3].Tex = mathfu::Vector<float, 2>(1.0f, 0.0f);
-
-    uint16_t planeIndices[] =
-    {
-        0, 1, 2,
-        0, 2, 3
-    };
-
-    std::shared_ptr<VertexBuffer> planeVB =
-        graphics->CreateVertexBuffer(sizeof(SimpleVertex) * planeVertices.size(), planeVertices.data());
-
-    std::shared_ptr<IndexBuffer> planeIB =
-        graphics->CreateIndexBuffer(sizeof(uint16_t) * 6, planeIndices, 6);
-
-    uint32_t planeIndexCount = 6;
-
-    mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
-
     //topology
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
 
     int32_t imgWidth = 0;
     int32_t imgHeight = 0;
     int32_t imgChannels = 0;
+
+    ///Default textures
+    auto defaultNormalTexture = graphics->CreateTexture2D(neutralNormal, 1, 1);
+    auto defaultAlbedoTexture = graphics->CreateTexture2D(whitePixel, 1, 1);
+    auto defaultSpecularTexture = graphics->CreateTexture2D(whitePixel, 1, 1);
     
-    //load texture
-    std::vector<uint8_t> pixels = graphics->LoadImageFromFile("textures/rocks.jpg", &imgWidth, &imgHeight, &imgChannels);
-    
-    std::shared_ptr<Texture2D> myTexture = nullptr;
-    if (!pixels.empty()) 
+    // Cube texture
+    std::shared_ptr<Texture2D> cubeTexture = nullptr;
+    if (cubeTexture = graphics->CreateTexture2DFromFile("Textures/rocks.jpg"))
     {
-        myTexture = graphics->CreateTexture2D(pixels, imgWidth, imgHeight);
-    }
-    else 
-    {
-        std::cout << "Error: Texture couldn't be loaded" << std::endl;
+        std::cout << "Cube texture created " << std::endl;
     }
 
     //normals
@@ -238,7 +214,7 @@ int main()
     //specular texture
     std::shared_ptr<Texture2D> specularTexture = graphics->CreateTexture2DFromFile("Textures/base_metallic.jpg");
 
-    float clearColor[4] = { 0.0f, 0.5f, 0.8f, 1.0f };
+    float clearColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
     float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
 
@@ -317,7 +293,63 @@ int main()
     std::vector<std::weak_ptr<RenderTargetView>> SahdowRTVS;
     SahdowRTVS.push_back(ShadowRenderTarget);
 
+ 
+    auto shadowDepthView = graphics->CreateShadowMap(window->GetClientWidth(), window->GetClientHeight());
+    if (!shadowDepthView)
+    {
+        std::cout << "Failed to create shadow map" << std::endl;
+    }
+    
+    //////////////////
+    std::vector<SimpleVertex> planeVertices =
+    {
+        SimpleVertex(mathfu::Vector<float,4>{-1.0f,  1.0f, 0.0f, 1.0f},
+                     mathfu::Vector<float,4>{0.0f, 1.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{1.0f, 0.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{0.0f, 0.0f, 1.0f, 0.0f},
+                     mathfu::Vector<float,2>{0.0f, 0.0f}),
 
+        SimpleVertex(mathfu::Vector<float,4>{ 1.0f,  1.0f, 0.0f, 1.0f},
+                     mathfu::Vector<float,4>{0.0f, 1.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{1.0f, 0.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{0.0f, 0.0f, 1.0f, 0.0f},
+                     mathfu::Vector<float,2>{1.0f, 0.0f}),
+
+        SimpleVertex(mathfu::Vector<float,4>{ 1.0f, -1.0f, 0.0f, 1.0f},
+                     mathfu::Vector<float,4>{0.0f, 1.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{1.0f, 0.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{0.0f, 0.0f, 1.0f, 0.0f},
+                     mathfu::Vector<float,2>{1.0f, 1.0f}),
+
+        SimpleVertex(mathfu::Vector<float,4>{-1.0f, -1.0f, 0.0f, 1.0f},
+                     mathfu::Vector<float,4>{0.0f, 1.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{1.0f, 0.0f, 0.0f, 0.0f},
+                     mathfu::Vector<float,4>{0.0f, 0.0f, 1.0f, 0.0f},
+                     mathfu::Vector<float,2>{0.0f, 1.0f}),
+        
+    };
+
+    std::vector<uint16_t> planeIndices =
+    {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    std::shared_ptr<IndexBuffer> p_planeIndexBuffer = nullptr;
+    p_planeIndexBuffer = graphics->CreateIndexBuffer(sizeof(uint16_t) * planeIndices.size(), planeIndices.data(), planeIndices.size());
+
+    std::shared_ptr<VertexBuffer> p_planeVertexBuffer = nullptr;
+    p_planeVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * planeVertices.size(), planeVertices.data());
+
+
+    mathfu::Vector<float, 3>  planePosition(0.0f, 00.0f, 0.0f);
+    mathfu::Vector<float, 3>  planeScale(50.0f,50.0f,50.0f);
+    
+    ///Plane world Matrix 
+    mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4>::FromTranslationVector(planePosition) * mathfu::Matrix<float, 4>::FromScaleVector(planeScale);
+
+
+    /// Render loop
     bool isAppRunning = true;
     while (isAppRunning)
     {
@@ -330,28 +362,32 @@ int main()
         float deltaTime = elapsed.count();
         time += deltaTime;
 
-        cameraData.worldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
-        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
 
-        moveData.cosValue = std::cos(time);
+        //moveData.cosValue = std::cos(time);
         moveData.amplitude = amplitude;
-
-        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
-        
 
  //// pass 0 shadow pre process 
 
-        graphics->SetRenderTargetViews(SahdowRTVS, depthStencilView);
-        graphics->ClearRenderTargetView(NormalRTV, clearColor);
-        graphics->ClearRenderTargetView(ColorRTV, clearColor);
-        graphics->ClearRenderTargetView(SpecularRTV, clearColor);
-        graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+        cameraData.worldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(100, 100, 100)); /// Model scale
+        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
+
+        if (shadowDepthView)
+        {
+            graphics->SetRenderTargetViews(SahdowRTVS, shadowDepthView);
+            graphics->ClearDepthStencilView(shadowDepthView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+        }
+        else
+        {
+            graphics->SetRenderTargetViews(SahdowRTVS, depthStencilView);
+            graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+        }
 
         graphics->SetVertexShader(p_ShadowVertexshader);
         graphics->SetPixelShader(p_ShadowPixelShader);
         graphics->SetTopology(p_topology);
-        graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex), 0);
-        graphics->SetIndexBuffer(p_indexBuffer);
+        graphics->SetVertexBuffer(p_pistolVertexBuffer, sizeof(SimpleVertex), 0);
+        graphics->SetIndexBuffer(p_pistolIndexBuffer);
         graphics->SetConstantBuffer(constantBuffer);
         graphics->SetSampler(0, mySampler);
 
@@ -359,13 +395,61 @@ int main()
         if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
         if (specularTexture) graphics->SetTexture2D(4, specularTexture);
 
+        // Clear render target used for shadow (if present)
         graphics->ClearRenderTargetView(ShadowRenderTarget, blackColor);
 
         graphics->SetRasterizerState(shadowRasterizer);
-        graphics->Draw(indexCount, 0);
-         
+        graphics->Draw(pistolIndexCount, 0);
+
+        //if ( shadowDepthView)
+        //{
+
+        //    float bias = 0.005f;
+        //    mathfu::Vector<float, 3> sampleWorldPos = mathfu::Vector<float, 3>(100.0f, 200.0f, 0.0f);
+        //    bool occluded = graphics->IsOccluded(shadowDepthView, sampleWorldPos, cameraData.ShadowView, cameraData.ShadowProjection, bias);
+
+        //    if (occluded)
+        //    {
+        //        std::cout << "Sample point is occluded by shadow map\n";
+        //    }
+        //    else
+        //    {
+        //        std::cout << "Sample point is lit\n";
+        //    }
+        //}
+
+        graphics->SetShadowMapFromDepthView(5, shadowDepthView);
 
  // PASS 1: model and plane
+
+
+        //update const buffer with the cube world matrix
+        cameraData.worldMatrix = planeWorldMatrix;
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
+
+
+        if (normalTexture)
+            graphics->SetTexture2D(2, cubeTexture);
+        else
+            graphics->SetTexture2D(2, defaultNormalTexture);
+
+        if (albedoTexture)
+            graphics->SetTexture2D(3, cubeTexture);
+
+        else if (cubeTexture)
+            graphics->SetTexture2D(3, cubeTexture);
+        else
+            graphics->SetTexture2D(3, defaultAlbedoTexture);
+
+        if (specularTexture)
+            graphics->SetTexture2D(4, cubeTexture);
+        else
+            graphics->SetTexture2D(4, defaultSpecularTexture);
+
+        graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
+        graphics->SetIndexBuffer(p_planeIndexBuffer);
+        graphics->Draw(6, 0);
+
 
         cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
@@ -382,8 +466,8 @@ int main()
             graphics->SetPixelShader(p_pixelShader_1);
 
             graphics->SetTopology(p_topology);
-            graphics->SetVertexBuffer(p_vertexBuffer, sizeof(SimpleVertex), 0);
-            graphics->SetIndexBuffer(p_indexBuffer);
+            graphics->SetVertexBuffer(p_pistolVertexBuffer, sizeof(SimpleVertex), 0);
+            graphics->SetIndexBuffer(p_pistolIndexBuffer);
             graphics->SetConstantBuffer(constantBuffer);
 
             graphics->SetSampler(0, mySampler);
@@ -407,15 +491,15 @@ int main()
             }
             graphics->SetRasterizerState(Rasterizer_pass1);
 
-            graphics->Draw(indexCount, 0);
+            graphics->Draw(pistolIndexCount, 0);
 
-            //update const buffer with the plane world matrix
-       cameraData.worldMatrix = planeWorldMatrix;
-       graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
-            graphics->Draw(planeIndexCount, 0);
+            
 
 
      // PASS 2: quad -> backbuffer
+            cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
+            graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
+
             graphics->SetRenderTargetView(RTView, depthStencilView);
             graphics->ClearRenderTargetView(RTView, clearColor);
             graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);

@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "mathfu/vector.h"
+#include "mathfu/matrix.h"
+
 
 #include "SwapChain.h"
 #include "ConstantBuffer.h"
@@ -27,7 +29,17 @@ struct SimpleVertex
 	mathfu::Vector<float, 4> Normals;
 	mathfu::Vector<float, 4> Tangent;
 	mathfu::Vector<float, 4> Binormal;
-	mathfu::Vector<float, 2> Tex;
+	mathfu::Vector<float, 2> Tex; // UVs
+
+	SimpleVertex(
+		const mathfu::Vector<float, 4>& pos = mathfu::Vector<float, 4>(),
+		const mathfu::Vector<float, 4>& normals = mathfu::Vector<float, 4>(),
+		const mathfu::Vector<float, 4>& tangent = mathfu::Vector<float, 4>(),
+		const mathfu::Vector<float, 4>& binormal = mathfu::Vector<float, 4>(),
+		const mathfu::Vector<float, 2>& tex = mathfu::Vector<float, 2>())
+		: Pos(pos), Normals(normals), Tangent(tangent), Binormal(binormal), Tex(tex)
+	{
+	}
 };
 
 
@@ -137,6 +149,16 @@ public:
 
 	virtual void SetRasterizerState(std::weak_ptr <RasterizerState> rasterizer) = 0;
 
+	/// Shadow map
+	virtual std::shared_ptr<DepthStencilView> CreateShadowMap(uint32_t width = 0, uint32_t height = 0) = 0;
+
+	virtual bool ReadShadowMap(std::weak_ptr<DepthStencilView> shadowDepthView, std::vector<float>& outDepth) = 0;
+
+	virtual void SetShadowMap(uint32_t slot, std::weak_ptr<Texture2D> shadowMapTexture) = 0;
+
+	virtual bool IsOccluded(std::weak_ptr<DepthStencilView> shadowDepthView, const mathfu::Vector<float, 3>& worldPos, const mathfu::Matrix<float, 4, 4>& shadowView, const mathfu::Matrix<float, 4, 4>& shadowProj, float bias = 0.005f) = 0;
+
+	virtual void SetShadowMapFromDepthView(uint32_t slot, std::weak_ptr<DepthStencilView> shadowDepthView) = 0;
 
 protected:
 	uint32_t m_shaderModel;

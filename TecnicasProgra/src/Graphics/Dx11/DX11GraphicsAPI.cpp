@@ -77,6 +77,11 @@ DXGI_FORMAT GetDX11Format_internal(const GAPI_FORMAT::K format)
     }
 }
 
+/// <summary>
+/// Bind flags for text2D desc
+/// </summary>
+/// <param name="bindFlags"></param>
+/// <returns></returns>
 uint32_t GetDx11BindFlag_internal(uint32_t bindFlags)
 {
     uint32_t ResultFlags = 0;
@@ -580,7 +585,7 @@ std::shared_ptr<VertexBuffer> DX11GraphicsAPI::CreateVertexBuffer(const uint32_t
     bd.ByteWidth = bytewidth;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    bd.StructureByteStride = 24;
+    bd.StructureByteStride = 0;
 
     D3D11_SUBRESOURCE_DATA InitData = {};
     InitData.pSysMem = vertices;
@@ -1054,7 +1059,8 @@ bool DX11GraphicsAPI::ImportModelAsset_Assimp(const std::string& filename, std::
         return false;
     }
 
-    for (unsigned int meshIndex = scene->mNumMeshes -1 ; meshIndex != 0; meshIndex--)
+    //for (unsigned int meshIndex = scene->mNumMeshes -1 ; meshIndex != 0; meshIndex--)
+    for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex)
     {
         aiMesh* mesh = scene->mMeshes[meshIndex];
         if (!mesh)
@@ -1295,4 +1301,225 @@ std::shared_ptr<RenderTargetView> DX11GraphicsAPI::CreateRenderTargetView(uint32
 
     SAFE_RELEASE(renderTargetTexture);
     return resultRTV;
+}
+
+std::shared_ptr<DepthStencilView> DX11GraphicsAPI::CreateShadowMap(uint32_t width, uint32_t height)
+{
+    if (m_device == nullptr || width == 0 || height == 0)
+    {
+        return nullptr;
+    }
+
+       D3D11_TEXTURE2D_DESC desc = {};
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_R32_TYPELESS;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+    desc.CPUAccessFlags = 0;
+    desc.MiscFlags = 0;
+    
+  ID3D11Texture2D * tex = nullptr;
+  ID3D11DepthStencilView* dsv = nullptr;
+
+    if (SUCCEEDED(m_device->CreateTexture2D(&desc, nullptr, &tex)))
+    {
+         D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+         dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+         dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+         dsvDesc.Texture2D.MipSlice = 0;
+
+         m_device->CreateDepthStencilView(tex, &dsvDesc, &dsv);
+
+         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};  // Shader resource view
+         srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+         srvDesc.Texture2D.MostDetailedMip = 0;
+         srvDesc.Texture2D.MipLevels = 1;
+
+         ID3D11ShaderResourceView* srv = nullptr;
+         m_device->CreateShaderResourceView(tex, &srvDesc, &srv);
+
+         auto result = std::make_shared<Dx11DepthStencilView>();
+         result->m_depthTexture = tex; 
+         result->m_depthStencilView = dsv;
+         result->m_shadowSRV = srv;
+
+         return result;
+    }
+  SAFE_RELEASE(dsv);
+  SAFE_RELEASE(tex);
+  return nullptr;
+}
+
+void DX11GraphicsAPI::SetShadowMap(uint32_t slot, std::weak_ptr<Texture2D> shadowMapTexture)
+{
+    if (m_immediateContext == nullptr)
+    {
+        return;
+    }
+
+    if (shadowMapTexture.expired())
+    {
+       ID3D11ShaderResourceView * nullViews[1] = { nullptr };
+       m_immediateContext->PSSetShaderResources(slot, 1, nullViews);
+       return;
+    }
+  
+       auto Texture = std::reinterpret_pointer_cast<Dx11Texture2D>(shadowMapTexture.lock());
+       if (Texture && Texture ->m_textureView)
+       {
+           m_immediateContext->PSSetShaderResources(slot, 1, &Texture ->m_textureView);
+       }
+}
+
+bool DX11GraphicsAPI::ReadShadowMap(std::weak_ptr<DepthStencilView> shadowDepthView, std::vector<float>&outDepth)
+ {
+    if (shadowDepthView.expired() || m_device == nullptr || m_immediateContext == nullptr)
+    {
+        return false;
+    }
+
+     auto depthStencilView = std::reinterpret_pointer_cast<Dx11DepthStencilView>(shadowDepthView.lock());
+     if (!depthStencilView || depthStencilView->m_depthTexture == nullptr)
+     {
+        return false;
+     }
+
+     D3D11_TEXTURE2D_DESC desc = {};
+  depthStencilView->m_depthTexture->GetDesc(&desc);
+  
+
+    D3D11_TEXTURE2D_DESC stagingDesc = {};
+  stagingDesc.Width = desc.Width;
+  stagingDesc.Height = desc.Height;
+  stagingDesc.MipLevels = 1;
+  stagingDesc.ArraySize = 1;
+  stagingDesc.Format = DXGI_FORMAT_R32_FLOAT;
+  stagingDesc.SampleDesc.Count = 1;
+  stagingDesc.Usage = D3D11_USAGE_STAGING;
+  stagingDesc.BindFlags = 0;
+  stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+  stagingDesc.MiscFlags = 0;
+  
+     ID3D11Texture2D * stagingTex = nullptr;
+     if (SUCCEEDED(m_device->CreateTexture2D(&stagingDesc, nullptr, &stagingTex)))
+     {
+         m_immediateContext->CopyResource(stagingTex, depthStencilView->m_depthTexture);
+
+         D3D11_MAPPED_SUBRESOURCE mapped = {};
+         m_immediateContext->Map(stagingTex, 0, D3D11_MAP_READ, 0, &mapped);
+
+         
+         outDepth.resize(desc.Width * desc.Height);
+
+         const uint8_t* rowPtr = reinterpret_cast<const uint8_t*>(mapped.pData);
+         for (uint32_t y = 0; y < desc.Height; ++y)
+         {
+             const float* src = reinterpret_cast<const float*>(rowPtr);
+             for (uint32_t x = 0; x < desc.Width; ++x)
+             {
+                 outDepth[y * desc.Width + x] = src[x];
+             }
+             rowPtr += mapped.RowPitch;
+         }
+         
+         m_immediateContext->Unmap(stagingTex, 0);
+         SAFE_RELEASE(stagingTex);
+         return true;
+     }
+     SAFE_RELEASE(stagingTex);
+     return false;
+}
+
+
+bool DX11GraphicsAPI::IsOccluded(std::weak_ptr<DepthStencilView> shadowDepthView, const mathfu::Vector<float, 3>& worldPos, const mathfu::Matrix<float, 4, 4>& shadowView, const mathfu::Matrix<float, 4, 4>& shadowProj, float bias)
+{
+    if (shadowDepthView.expired() || m_device == nullptr || m_immediateContext == nullptr)
+    {
+        return false;
+    }
+
+    auto dxDSV = std::reinterpret_pointer_cast<Dx11DepthStencilView>(shadowDepthView.lock());
+    if (!dxDSV || dxDSV->m_depthTexture == nullptr)
+    {
+        return false;
+    }
+
+    std::vector<float> depthData;
+    if (!ReadShadowMap(shadowDepthView, depthData))
+    {
+        return false;
+    }
+
+    D3D11_TEXTURE2D_DESC desc = {};
+    dxDSV->m_depthTexture->GetDesc(&desc);
+    uint32_t width = desc.Width;
+    uint32_t height = desc.Height;
+    if (width == 0 || height == 0 || depthData.size() < (size_t)width * (size_t)height)
+    {
+        return false;
+    }
+
+    mathfu::Matrix<float, 4, 4> vp = shadowProj * shadowView;
+    mathfu::Vector<float, 4> clip = vp * mathfu::Vector<float, 4>(worldPos.x, worldPos.y, worldPos.z, 1.0f);
+
+    if (clip.w == 0.0f) 
+    {
+        return false;
+    }
+
+    float invW = 1.0f / clip.w;
+    float ndcX = clip.x * invW;
+    float ndcY = clip.y * invW;
+    float ndcZ = clip.z * invW;
+
+    float u = ndcX * 0.5f + 0.5f;
+    float v = ndcY * 0.5f + 0.5f;
+    float depth = ndcZ * 0.5f + 0.5f;
+
+
+    if (u < 0.0f || u > 1.0f || v < 0.0f || v > 1.0f)
+    {
+        return false;
+    }
+
+    int tx = static_cast<int>(std::clamp(u * static_cast<float>(width), 0.0f, static_cast<float>(width - 1)));
+    int ty = static_cast<int>(std::clamp(v * static_cast<float>(height), 0.0f, static_cast<float>(height - 1)));
+
+    float stored = depthData[ty * width + tx];
+
+    return (depth - bias) > stored;
+}
+
+void DX11GraphicsAPI::SetShadowMapFromDepthView(uint32_t slot, std::weak_ptr<DepthStencilView> shadowDepthView)
+{
+    if (m_immediateContext == nullptr)
+    {
+        return;
+    }
+
+    if (shadowDepthView.expired())
+    {
+        SetShadowMap(slot, std::shared_ptr<Texture2D>());
+        return;
+    }
+
+    auto depthStencilView = std::reinterpret_pointer_cast<Dx11DepthStencilView>(shadowDepthView.lock());
+    if (!depthStencilView || depthStencilView->m_shadowSRV == nullptr)
+    {
+        SetShadowMap(slot, std::shared_ptr<Texture2D>());
+        return;
+    }
+
+    auto wrapper = std::make_shared<Dx11Texture2D>();
+    wrapper->m_texture = nullptr;
+    wrapper->m_textureView = depthStencilView->m_shadowSRV;
+    depthStencilView->m_shadowSRV->AddRef();
+
+    std::shared_ptr<Texture2D> tex = std::static_pointer_cast<Texture2D>(wrapper);
+    SetShadowMap(slot, tex);
 }
