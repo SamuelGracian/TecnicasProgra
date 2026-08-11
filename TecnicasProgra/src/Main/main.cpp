@@ -72,7 +72,7 @@ int main()
     uint32_t width = 800;
     uint32_t height = 600;
 
-    mathfu::Vector<float,3> Eye(20.0f, 0.0f, 800.0f); 
+    mathfu::Vector<float,3> Eye(20.0f, 0.0f, 500.0f); 
     mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
@@ -81,7 +81,7 @@ int main()
 
 
     ///Second Camera
-    mathfu::Vector<float, 3> LightEye ( 100.0f, 100.0f, 200.0f);
+    mathfu::Vector<float, 3> LightEye  = Eye;
 
     mathfu::Vector<float, 3> LightDirection = (At - LightEye).Normalized();
 
@@ -342,8 +342,8 @@ int main()
     p_planeVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * planeVertices.size(), planeVertices.data());
 
 
-    mathfu::Vector<float, 3>  planePosition(0.0f, 00.0f, -3.0f);
-    mathfu::Vector<float, 3>  planeScale(20.0f,20.0f,1.0f);
+    mathfu::Vector<float, 3>  planePosition(0.0f, 00.0f, 0.0f);
+    mathfu::Vector<float, 3>  planeScale(50.0f,50.0f,50.0f);
     
     ///Plane world Matrix 
     mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4>::FromTranslationVector(planePosition) * mathfu::Matrix<float, 4>::FromScaleVector(planeScale);
@@ -362,16 +362,15 @@ int main()
         float deltaTime = elapsed.count();
         time += deltaTime;
 
-        cameraData.worldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(100, 100, 100)); /// Model scale
-        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
 
-        moveData.cosValue = std::cos(time);
+        //moveData.cosValue = std::cos(time);
         moveData.amplitude = amplitude;
 
-        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
-        
-
  //// pass 0 shadow pre process 
+
+        cameraData.worldMatrix = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(100, 100, 100)); /// Model scale
+        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
         if (shadowDepthView)
         {
@@ -402,12 +401,6 @@ int main()
         graphics->SetRasterizerState(shadowRasterizer);
         graphics->Draw(pistolIndexCount, 0);
 
-
-        //graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
-        //graphics->SetIndexBuffer(p_planeIndexBuffer);
-        //graphics->SetConstantBuffer(constantBuffer);
-        //graphics->Draw(6, 0);
-
         //if ( shadowDepthView)
         //{
 
@@ -428,6 +421,35 @@ int main()
         graphics->SetShadowMapFromDepthView(5, shadowDepthView);
 
  // PASS 1: model and plane
+
+
+        //update const buffer with the cube world matrix
+        cameraData.worldMatrix = planeWorldMatrix;
+        graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
+
+
+        if (normalTexture)
+            graphics->SetTexture2D(2, cubeTexture);
+        else
+            graphics->SetTexture2D(2, defaultNormalTexture);
+
+        if (albedoTexture)
+            graphics->SetTexture2D(3, cubeTexture);
+
+        else if (cubeTexture)
+            graphics->SetTexture2D(3, cubeTexture);
+        else
+            graphics->SetTexture2D(3, defaultAlbedoTexture);
+
+        if (specularTexture)
+            graphics->SetTexture2D(4, cubeTexture);
+        else
+            graphics->SetTexture2D(4, defaultSpecularTexture);
+
+        graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
+        graphics->SetIndexBuffer(p_planeIndexBuffer);
+        graphics->Draw(6, 0);
+
 
         cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
@@ -471,32 +493,7 @@ int main()
 
             graphics->Draw(pistolIndexCount, 0);
 
-            //update const buffer with the cube world matrix
-           /* cameraData.worldMatrix = planeWorldMatrix;
-            graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
-
-
-            if (normalTexture)
-                graphics->SetTexture2D(2, cubeTexture);
-            else
-                graphics->SetTexture2D(2, defaultNormalTexture);
-
-            if (albedoTexture)
-                graphics->SetTexture2D(3, cubeTexture);
-                
-            else if (cubeTexture)
-                graphics->SetTexture2D(3, cubeTexture);
-            else
-                graphics->SetTexture2D(3, defaultAlbedoTexture);
-
-            if (specularTexture)
-                graphics->SetTexture2D(4, cubeTexture);
-            else
-                graphics->SetTexture2D(4, defaultSpecularTexture);
-
-            graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
-            graphics->SetIndexBuffer(p_planeIndexBuffer);
-            graphics->Draw(6, 0);*/
+            
 
 
      // PASS 2: quad -> backbuffer
