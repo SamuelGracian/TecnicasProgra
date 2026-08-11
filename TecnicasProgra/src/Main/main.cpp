@@ -182,8 +182,8 @@ int main()
 
    /// Model world matrix 
     float time = 0.0f;
-    mathfu::Matrix <float, 4 > modelWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(100, 100, 100));
-    mathfu::Matrix<float, 4 > modelWorldRotation = mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
+    mathfu::Matrix <float, 4 > modelWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
+    mathfu::Matrix<float, 4, 4> modelWorldTransformation = mathfu::Matrix<float, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0.0f, 0.0f, 0.0f));
 
     //topology
     std::shared_ptr<Topology> p_topology = graphics->CreateTopology(Topology::Type::TriangleList);
@@ -199,7 +199,7 @@ int main()
     
     // Cube texture
     std::shared_ptr<Texture2D> cubeTexture = nullptr;
-    if (cubeTexture = graphics->CreateTexture2DFromFile("Textures/rocks.jpg"))
+    if (cubeTexture = graphics->CreateTexture2DFromFile("RawData/Textures/rocks.jpg"))
     {
         std::cout << "Cube texture created " << std::endl;
     }
@@ -344,8 +344,8 @@ int main()
     p_planeVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * planeVertices.size(), planeVertices.data());
 
 
-    mathfu::Vector<float, 3>  planePosition(0.0f, 00.0f, 0.0f);
-    mathfu::Vector<float, 3>  planeScale(50.0f,50.0f,50.0f);
+    mathfu::Vector<float, 3>  planePosition(0.0f, 00.0f, -500.0f);
+    mathfu::Vector<float, 3>  planeScale(100.0f,100.0f,100.0f);
     
     ///Plane world Matrix 
     mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4>::FromTranslationVector(planePosition) * mathfu::Matrix<float, 4>::FromScaleVector(planeScale);
@@ -365,7 +365,7 @@ int main()
         time += deltaTime;
 
  //// pass 0 shadow pre process 
-
+        mathfu::Matrix<float, 4 > modelWorldRotation = mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
         cameraData.worldMatrix = modelWorldScale * modelWorldRotation ;
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
@@ -374,11 +374,6 @@ int main()
             graphics->SetRenderTargetViews(SahdowRTVS, shadowDepthView);
             graphics->ClearDepthStencilView(shadowDepthView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
         }
-        //else
-        //{
-        //    graphics->SetRenderTargetViews(SahdowRTVS, depthStencilView);
-        //    graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
-        //}
 
         graphics->SetVertexShader(p_ShadowVertexshader);
         graphics->SetPixelShader(p_ShadowPixelShader);
@@ -400,11 +395,9 @@ int main()
 
         //if ( shadowDepthView)
         //{
-
         //    float bias = 0.005f;
         //    mathfu::Vector<float, 3> sampleWorldPos = mathfu::Vector<float, 3>(100.0f, 200.0f, 0.0f);
         //    bool occluded = graphics->IsOccluded(shadowDepthView, sampleWorldPos, cameraData.ShadowView, cameraData.ShadowProjection, bias);
-
         //    if (occluded)
         //    {
         //        std::cout << "Sample point is occluded by shadow map\n";
@@ -415,80 +408,70 @@ int main()
         //    }
         //}
 
+        std::vector<std::weak_ptr<RenderTargetView>> emptyRTVs;
+        graphics->SetRenderTargetViews(emptyRTVs, std::weak_ptr<DepthStencilView>()); /// Take  binded Depth Stencil View and Render Target Views
+
+
         graphics->SetShadowMapFromDepthView(5, shadowDepthView);
 
  // PASS 1: model and plane
 
+        // Unbind SRV del shadow slot
+        graphics->SetTexture2D(5, std::weak_ptr<Texture2D>());
 
-        //update const buffer with the cube world matrix
+        // Bind G-buffer RTVs + depth stencil
+        graphics->SetRenderTargetViews(gbufferRTVs, depthStencilView);
+        graphics->ClearRenderTargetView(NormalRTV, clearColor);
+        graphics->ClearRenderTargetView(ColorRTV, clearColor);
+        graphics->ClearRenderTargetView(SpecularRTV, clearColor);
+        graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+
+        // --- DRAW PLANE ---
         cameraData.worldMatrix = planeWorldMatrix;
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
+        // asegurarse de usar los shaders/estado correctos para el G-buffer
+        graphics->SetVertexShader(p_vertexShader_1);
+        graphics->SetPixelShader(p_pixelShader_1);
+        graphics->SetTopology(p_topology);
+        graphics->SetSampler(0, mySampler);
 
-        if (normalTexture)
-            graphics->SetTexture2D(2, cubeTexture);
-        else
-            graphics->SetTexture2D(2, defaultNormalTexture);
+        // textures para el plano 
+        graphics->SetTexture2D(2, normalTexture ? normalTexture : defaultNormalTexture);
+        graphics->SetTexture2D(3, cubeTexture ? cubeTexture : defaultAlbedoTexture);
+        graphics->SetTexture2D(4, specularTexture ? specularTexture : defaultSpecularTexture);
 
-        if (albedoTexture)
-            graphics->SetTexture2D(3, cubeTexture);
-
-        else if (cubeTexture)
-            graphics->SetTexture2D(3, cubeTexture);
-        else
-            graphics->SetTexture2D(3, defaultAlbedoTexture);
-
-        if (specularTexture)
-            graphics->SetTexture2D(4, cubeTexture);
-        else
-            graphics->SetTexture2D(4, defaultSpecularTexture);
+        // rasterizer sin culling para debug del plano 
+        graphics->SetRasterizerState(Rasterizer_pass2);
 
         graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
         graphics->SetIndexBuffer(p_planeIndexBuffer);
         graphics->Draw(6, 0);
 
+        // --- DRAW MODEL ---
 
-        cameraData.worldMatrix = cameraData.worldMatrix * mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
+        mathfu::Matrix<float, 4, 4> modelWorld = modelWorldTransformation * modelWorldRotation * modelWorldScale;
+
+        cameraData.worldMatrix = modelWorld;
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
+        // estado/texturas para el modelo
+        graphics->SetVertexShader(p_vertexShader_1);
+        graphics->SetPixelShader(p_pixelShader_1);
+        graphics->SetTopology(p_topology);
+        graphics->SetSampler(0, mySampler);
 
-            graphics->SetRenderTargetViews(gbufferRTVs, depthStencilView);
+        if (normalTexture) graphics->SetTexture2D(2, normalTexture);
+        if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
+        if (specularTexture) graphics->SetTexture2D(4, specularTexture);
 
-            graphics->ClearRenderTargetView(NormalRTV, clearColor);
-            graphics->ClearRenderTargetView(ColorRTV, clearColor);
-            graphics->ClearRenderTargetView(SpecularRTV, clearColor);
-            graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
+        
+        graphics->SetRasterizerState(Rasterizer_pass1);
 
-            graphics->SetVertexShader(p_vertexShader_1);
-            graphics->SetPixelShader(p_pixelShader_1);
-
-            graphics->SetTopology(p_topology);
-            graphics->SetVertexBuffer(p_pistolVertexBuffer, sizeof(SimpleVertex), 0);
-            graphics->SetIndexBuffer(p_pistolIndexBuffer);
-            graphics->SetConstantBuffer(constantBuffer);
-
-            graphics->SetSampler(0, mySampler);
-
-            
-            if (normalTexture)
-            {
-                graphics->SetTexture2D(2, normalTexture);
-
-            }
-
-            if (albedoTexture)
-            {
-                graphics->SetTexture2D(3, albedoTexture);
-
-            }
-
-            if (specularTexture)
-            {
-                graphics->SetTexture2D(4, specularTexture);
-            }
-            graphics->SetRasterizerState(Rasterizer_pass1);
-
-            graphics->Draw(pistolIndexCount, 0);
+        graphics->SetVertexBuffer(p_pistolVertexBuffer, sizeof(SimpleVertex), 0);
+        graphics->SetIndexBuffer(p_pistolIndexBuffer);
+        graphics->SetConstantBuffer(constantBuffer);
+        graphics->Draw(pistolIndexCount, 0);
 
             
 
