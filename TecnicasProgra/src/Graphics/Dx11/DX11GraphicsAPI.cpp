@@ -372,8 +372,10 @@ IDXGISwapChain* DX11GraphicsAPI::CreateSwapChain_internal(HWND hwnd, uint32_t wi
                     sd.SampleDesc.Count = 1;
                     sd.SampleDesc.Quality = 0;
                     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-                    sd.BufferCount = 1;
-
+                    sd.BufferCount = 2;
+                    sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+                    sd.Scaling = DXGI_SCALING_NONE;
+                    sd.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 
                     if (SUCCEEDED(dxgiFactory2->CreateSwapChainForHwnd(m_device, hwnd, &sd, nullptr, nullptr, &swapChain1)))
                     {
@@ -844,40 +846,40 @@ std::shared_ptr<ViewPort> DX11GraphicsAPI::CreateViewPort(float width, float hei
     return std::shared_ptr<ViewPort>();
 }
 
-void DX11GraphicsAPI::SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView)
-{
-    if (m_immediateContext == nullptr)
-    {
-        std::cout << "Null immediate context" << std::endl;
-        return;
-    }
-
-    ID3D11RenderTargetView* rtv = nullptr;
-    ID3D11DepthStencilView* dsv = nullptr;
-
-    // Get RenderTargetView
-    if (!renderTargetView.expired())
-    {
-        std::shared_ptr<Dx11RenderTargetView> tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
-        if (tempRTV && tempRTV->m_renderTargetView)
-        {
-            rtv = tempRTV->m_renderTargetView;
-        }
-    }
-
-    // Get DepthStencilView
-    if (!depthStencilView.expired())
-    {
-        std::shared_ptr<Dx11DepthStencilView> tempDSV = std::reinterpret_pointer_cast<Dx11DepthStencilView>(depthStencilView.lock());
-        if (tempDSV && tempDSV->m_depthStencilView)
-        {
-            dsv = tempDSV->m_depthStencilView;
-        }
-    }
-
-    // Set both render target and depth stencil
-    m_immediateContext->OMSetRenderTargets(1, &rtv, dsv);
-}
+//void DX11GraphicsAPI::SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView)
+//{
+//    if (m_immediateContext == nullptr)
+//    {
+//        std::cout << "Null immediate context" << std::endl;
+//        return;
+//    }
+//
+//    ID3D11RenderTargetView* rtv = nullptr;
+//    ID3D11DepthStencilView* dsv = nullptr;
+//
+//    // Get RenderTargetView
+//    if (!renderTargetView.expired())
+//    {
+//        std::shared_ptr<Dx11RenderTargetView> tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
+//        if (tempRTV && tempRTV->m_renderTargetView)
+//        {
+//            rtv = tempRTV->m_renderTargetView;
+//        }
+//    }
+//
+//    // Get DepthStencilView
+//    if (!depthStencilView.expired())
+//    {
+//        std::shared_ptr<Dx11DepthStencilView> tempDSV = std::reinterpret_pointer_cast<Dx11DepthStencilView>(depthStencilView.lock());
+//        if (tempDSV && tempDSV->m_depthStencilView)
+//        {
+//            dsv = tempDSV->m_depthStencilView;
+//        }
+//    }
+//
+//    // Set both render target and depth stencil
+//    m_immediateContext->OMSetRenderTargets(1, &rtv, dsv);
+//}
 
 void DX11GraphicsAPI::ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4])
 {
@@ -1028,16 +1030,43 @@ std::vector<uint8_t> DX11GraphicsAPI::LoadImageFromFile(const std::string& filep
 
 void DX11GraphicsAPI::SetTexture2D(uint32_t slot, std::weak_ptr<Texture2D> texture)
 {
-    if (m_immediateContext == nullptr || texture.expired())
+    if (m_immediateContext == nullptr)
+        return;
+
+
+    if (texture.expired())
     {
+        ID3D11ShaderResourceView* nullView[1] = { nullptr };
+        m_immediateContext->PSSetShaderResources(slot, 1, nullView);
         return;
     }
 
-    auto dx11Texture = std::static_pointer_cast<Dx11Texture2D>(texture.lock());
+    auto base = texture.lock();
 
-    if (dx11Texture && dx11Texture->m_textureView)
+
+    if (auto dxTex = std::dynamic_pointer_cast<Dx11Texture2D>(base))
     {
-        m_immediateContext->PSSetShaderResources(slot, 1, &dx11Texture->m_textureView);
+        if (dxTex->m_textureView)
+        {
+            m_immediateContext->PSSetShaderResources(slot, 1, &dxTex->m_textureView);
+            return;
+        }
+    }
+
+
+    if (auto dxRTV = std::dynamic_pointer_cast<Dx11RenderTargetView>(base))
+    {
+        if (dxRTV->m_resourceView)
+        {
+            m_immediateContext->PSSetShaderResources(slot, 1, &dxRTV->m_resourceView);
+            return;
+        }
+    }
+
+
+    {
+        ID3D11ShaderResourceView* nullView[1] = { nullptr };
+        m_immediateContext->PSSetShaderResources(slot, 1, nullView);
     }
 }
 
@@ -1220,7 +1249,7 @@ std::shared_ptr<Texture2D> DX11GraphicsAPI::CreateTexture2DFromFile(const std::s
 /// </summary>
 /// <param name="renderTargetViews"></param>
 /// <param name="depthStencilView"></param>
-void DX11GraphicsAPI::SetRenderTargetViews(const std::vector<std::weak_ptr<RenderTargetView>>& renderTargetViews,std::weak_ptr<DepthStencilView> depthStencilView)
+void DX11GraphicsAPI::SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView)
 {
     if (m_immediateContext == nullptr)
     {
@@ -1228,38 +1257,37 @@ void DX11GraphicsAPI::SetRenderTargetViews(const std::vector<std::weak_ptr<Rende
         return;
     }
 
-    std::vector<ID3D11RenderTargetView*> rtvs;
-    rtvs.reserve(renderTargetViews.size());
+    ID3D11RenderTargetView* rtv = nullptr;
+    ID3D11DepthStencilView* dsv = nullptr;
 
-    for (const auto& weakRTV : renderTargetViews)
+
+    if (!renderTargetView.expired())
     {
-        if (weakRTV.expired())
-            continue;
-
-        auto tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(weakRTV.lock());
+        std::shared_ptr<Dx11RenderTargetView> tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
         if (tempRTV && tempRTV->m_renderTargetView)
         {
-            rtvs.push_back(tempRTV->m_renderTargetView);
+            rtv = tempRTV->m_renderTargetView;
         }
     }
 
-    ID3D11DepthStencilView* dsv = nullptr;
+
     if (!depthStencilView.expired())
     {
-        auto tempDSV = std::reinterpret_pointer_cast<Dx11DepthStencilView>(depthStencilView.lock());
+        std::shared_ptr<Dx11DepthStencilView> tempDSV = std::reinterpret_pointer_cast<Dx11DepthStencilView>(depthStencilView.lock());
         if (tempDSV && tempDSV->m_depthStencilView)
         {
             dsv = tempDSV->m_depthStencilView;
         }
     }
 
-    if (!rtvs.empty())
+
     {
-        m_immediateContext->OMSetRenderTargets(
-            static_cast<UINT>(rtvs.size()),
-            rtvs.data(),
-            dsv);
+        ID3D11ShaderResourceView* nullViews[HIGHER_AVAILABLE_SLOT] = { nullptr };
+        m_immediateContext->PSSetShaderResources(0, HIGHER_AVAILABLE_SLOT, nullViews);
     }
+
+
+    m_immediateContext->OMSetRenderTargets(1, &rtv, dsv);
 }
 
 std::shared_ptr<RenderTargetView> DX11GraphicsAPI::CreateRenderTargetView(uint32_t width,uint32_t height,GAPI_FORMAT::K format)
@@ -1522,4 +1550,47 @@ void DX11GraphicsAPI::SetShadowMapFromDepthView(uint32_t slot, std::weak_ptr<Dep
 
     std::shared_ptr<Texture2D> tex = std::static_pointer_cast<Texture2D>(wrapper);
     SetShadowMap(slot, tex);
+}
+
+void DX11GraphicsAPI::SetRenderTargetViews(const std::vector<std::weak_ptr<RenderTargetView>>& renderTargetViews, std::weak_ptr<DepthStencilView> depthStencilView)
+{
+    if (m_immediateContext == nullptr)
+    {
+        std::cout << "Null immediate context" << std::endl;
+        return;
+    }
+
+    std::vector<ID3D11RenderTargetView*> rtvs;
+    rtvs.reserve(renderTargetViews.size());
+
+    for (const auto& weakRTV : renderTargetViews)
+    {
+        if (weakRTV.expired())
+            continue;
+
+        auto tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(weakRTV.lock());
+        if (tempRTV && tempRTV->m_renderTargetView)
+        {
+            rtvs.push_back(tempRTV->m_renderTargetView);
+        }
+    }
+
+    ID3D11DepthStencilView* dsv = nullptr;
+    if (!depthStencilView.expired())
+    {
+        auto tempDSV = std::reinterpret_pointer_cast<Dx11DepthStencilView>(depthStencilView.lock());
+        if (tempDSV && tempDSV->m_depthStencilView)
+        {
+            dsv = tempDSV->m_depthStencilView;
+        }
+    }
+
+    {
+        ID3D11ShaderResourceView* nullViews[HIGHER_AVAILABLE_SLOT] = { nullptr };
+        m_immediateContext->PSSetShaderResources(0, HIGHER_AVAILABLE_SLOT, nullViews);
+    }
+
+    ID3D11RenderTargetView** rtvsPtr = rtvs.empty() ? nullptr : rtvs.data();
+    UINT numRTVs = static_cast<UINT>(rtvs.size());
+    m_immediateContext->OMSetRenderTargets(numRTVs, rtvsPtr, dsv);
 }
