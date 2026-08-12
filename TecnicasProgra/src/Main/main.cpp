@@ -72,7 +72,7 @@ int main()
     uint32_t width = 800;
     uint32_t height = 600;
 
-    mathfu::Vector<float,3> Eye(20.0f, 0.0f, 500.0f); 
+    mathfu::Vector<float,3> Eye(20.0f, 100.0f, 500.0f); 
     mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
@@ -81,13 +81,13 @@ int main()
 
 
     ///Second Camera
-    mathfu::Vector<float, 3> LightEye  = Eye;
+    mathfu::Vector<float, 3> LightEye  (100.0f, 200.0f, 200.0f);
 
     mathfu::Vector<float, 3> LightDirection = (At - LightEye).Normalized();
 
     mathfu::Matrix<float, 4, 4> ShadowView = mathfu::Matrix<float, 4, 4>::LookAt(At, LightEye, Up);
 
-    mathfu::Matrix<float, 4, 4> ShadowProjection = mathfu::Matrix<float, 4, 4>::Ortho(-100,100.0, -100.0f, 100.0f,-1000.0f,1000.0f, -1.0f);
+    mathfu::Matrix<float, 4, 4> ShadowProjection = mathfu::Matrix<float, 4, 4>::Ortho(-200,200.0, -200.0f, 200.0f,-1000.0f,1000.0f, -1.0f);
 
 
     // Init Window
@@ -182,7 +182,7 @@ int main()
 
    /// Model world matrix 
     float time = 0.0f;
-    mathfu::Matrix <float, 4 > modelWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(80, 80, 80));
+    mathfu::Matrix <float, 4 > modelWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(50, 50, 50));
     mathfu::Matrix<float, 4, 4> modelWorldTransformation = mathfu::Matrix<float, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0.0f, 0.0f, 0.0f));
 
     //topology
@@ -292,8 +292,8 @@ int main()
 
     //Shadow render target,  usar render target para profundidad 
     auto ShadowRenderTarget = graphics->CreateRenderTargetView(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_R32_FLOAT);
-    std::vector<std::weak_ptr<RenderTargetView>> SahdowRTVS;
-    SahdowRTVS.push_back(ShadowRenderTarget);
+    std::vector<std::weak_ptr<RenderTargetView>> ShadowRTVS;
+    ShadowRTVS.push_back(ShadowRenderTarget);
 
  
     auto shadowDepthView = graphics->CreateShadowMap(window->GetClientWidth(), window->GetClientHeight());
@@ -344,11 +344,12 @@ int main()
     p_planeVertexBuffer = graphics->CreateVertexBuffer(sizeof(SimpleVertex) * planeVertices.size(), planeVertices.data());
 
 
-    mathfu::Vector<float, 3>  planePosition(0.0f, 00.0f, -8000.0f);
+    mathfu::Vector<float, 3>  planePosition(0.0f, -2000.0f, -5000.0f);
     mathfu::Vector<float, 3>  planeScale(500.0f,500.0f,500.0f);
+    mathfu::Matrix<float, 4, 4> planeRotation = mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(-mathfu::kPi*0.5f));
     
     ///Plane world Matrix 
-    mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4>::FromTranslationVector(planePosition) * mathfu::Matrix<float, 4>::FromScaleVector(planeScale);
+    mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4>::FromTranslationVector(planePosition) * planeRotation * mathfu::Matrix<float, 4>::FromScaleVector(planeScale);
 
 
     /// Render loop
@@ -367,11 +368,12 @@ int main()
  //// pass 0 shadow pre process 
         mathfu::Matrix<float, 4 > modelWorldRotation = mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * .5));
         cameraData.worldMatrix = modelWorldScale * modelWorldRotation ;
+
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
         if (shadowDepthView)
         {
-            graphics->SetRenderTargetViews(SahdowRTVS, shadowDepthView);
+            graphics->SetRenderTargetViews(ShadowRTVS, shadowDepthView);
             graphics->ClearDepthStencilView(shadowDepthView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
         }
 
@@ -383,11 +385,11 @@ int main()
         graphics->SetConstantBuffer(constantBuffer);
         graphics->SetSampler(0, mySampler);
 
-        if (normalTexture) graphics->SetTexture2D(2, normalTexture);
-        if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
-        if (specularTexture) graphics->SetTexture2D(4, specularTexture);
+        //if (normalTexture) graphics->SetTexture2D(2, normalTexture);
+        //if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
+        //if (specularTexture) graphics->SetTexture2D(4, specularTexture);
 
-        // Clear render target used for shadow (if present)
+        // Clear render target used for shadow
         graphics->ClearRenderTargetView(ShadowRenderTarget, blackColor);
 
         graphics->SetRasterizerState(shadowRasterizer);
@@ -435,9 +437,9 @@ int main()
         graphics->SetTopology(p_topology);
         graphics->SetSampler(0, mySampler);
 
-        graphics->SetTexture2D(2, normalTexture ? normalTexture : defaultNormalTexture);
+        graphics->SetTexture2D(2, cubeTexture ? cubeTexture : defaultNormalTexture);
         graphics->SetTexture2D(3, cubeTexture ? cubeTexture : defaultAlbedoTexture);
-        graphics->SetTexture2D(4, specularTexture ? specularTexture : defaultSpecularTexture);
+        graphics->SetTexture2D(4, cubeTexture ? cubeTexture : defaultSpecularTexture);
 
         graphics->SetRasterizerState(Rasterizer_pass2);
 
@@ -452,11 +454,6 @@ int main()
         cameraData.worldMatrix = modelWorld;
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
-        // estado/texturas para el modelo
-        graphics->SetVertexShader(p_vertexShader_1);
-        graphics->SetPixelShader(p_pixelShader_1);
-        graphics->SetTopology(p_topology);
-        graphics->SetSampler(0, mySampler);
 
         if (normalTexture) graphics->SetTexture2D(2, normalTexture);
         if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
