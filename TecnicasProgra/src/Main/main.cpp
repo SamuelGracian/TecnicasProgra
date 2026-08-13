@@ -3,6 +3,7 @@
 #include "mathfu/constants.h"
 #include "mathfu/matrix.h"
 #include <filesystem>
+#include <comdef.h>
 
 #include <fstream>
 #include <string>
@@ -405,20 +406,20 @@ int main()
         graphics->SetRasterizerState(shadowRasterizer);
         graphics->Draw(pistolIndexCount, 0);
 
-        if ( shadowDepthView)
-        {
-            float bias = 0.005f;
-            mathfu::Vector<float, 3> sampleWorldPos = mathfu::Vector<float, 3>(00.0f, 00.0f, 0.0f);
-            bool occluded = graphics->IsOccluded(shadowDepthView, sampleWorldPos, cameraData.ShadowView, cameraData.ShadowProjection, bias);
-            if (occluded)
-            {
-                std::cout << "Sample point is occluded by shadow map\n";
-            }
-            else
-            {
-                std::cout << "Sample point is lit\n";
-            }
-        }
+        //if ( shadowDepthView)
+        //{
+        //    float bias = 0.005f;
+        //    mathfu::Vector<float, 3> sampleWorldPos = mathfu::Vector<float, 3>(00.0f, 00.0f, 0.0f);
+        //    bool occluded = graphics->IsOccluded(shadowDepthView, sampleWorldPos, cameraData.ShadowView, cameraData.ShadowProjection, bias);
+        //    if (occluded)
+        //    {
+        //        std::cout << "Sample point is occluded by shadow map\n";
+        //    }
+        //    else
+        //    {
+        //        std::cout << "Sample point is lit\n";
+        //    }
+        //}
 
         std::vector<std::weak_ptr<RenderTargetView>> emptyRTVs;
         graphics->SetRenderTargetViews(emptyRTVs, std::weak_ptr<DepthStencilView>()); /// Take  binded Depth Stencil View and Render Target Views

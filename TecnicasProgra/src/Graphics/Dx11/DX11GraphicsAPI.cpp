@@ -14,6 +14,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <sstream>
+#include <comdef.h> 
 
 #include "Graphics/Dx11/Dx11ConstantBuffer.h"
 #include "Graphics/Dx11/Dx11SwapChain.h"
@@ -272,68 +273,199 @@ std::vector<D3D11_INPUT_ELEMENT_DESC> CreateInputLayoutDesc_internal(ID3D11Shade
 
 DX11GraphicsAPI::DX11GraphicsAPI() 
 {
-
-    //TO DO: Cambiar a parametro
     m_shaderModel = 5;
 }
 
+
+
 bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
 {
-  // Aquí va la inicialización de DirectX 11
-  if (handleWindow.expired())
-  {
-    return false;
-  }
+    if (handleWindow.expired())
+    {
+        return false;
+    }
 
-  std::shared_ptr<DisplaySurface> window = handleWindow.lock();
+    std::shared_ptr<DisplaySurface> window = handleWindow.lock();
 
-  // Create Device and Device Context here
+    UINT createDeviceFlags = 0;
 
-  UINT createDeviceFlags = 0;
 #ifdef _DEBUG
-  createDeviceFlags |= (D3D11_CREATE_DEVICE_DEBUG | D3D11_CREATE_DEVICE_DEBUGGABLE);
+    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-  std::vector <D3D_DRIVER_TYPE> driverTypes =
-      {
-          D3D_DRIVER_TYPE_HARDWARE,
-          D3D_DRIVER_TYPE_WARP,
-          D3D_DRIVER_TYPE_REFERENCE,
-      };
+    // ---------------------------------------------------------
+    // Feature Levels
+    // ---------------------------------------------------------
 
-  std::vector <D3D_FEATURE_LEVEL> featureLevels =
-      {
-          D3D_FEATURE_LEVEL_11_1,
-          D3D_FEATURE_LEVEL_11_0,
-          D3D_FEATURE_LEVEL_10_1,
-          D3D_FEATURE_LEVEL_10_0,
-      };
-
-  D3D_FEATURE_LEVEL resultFeatureLevel;
-  
-  for ( const auto& drivertype: driverTypes )
-  {
- 
-    if (SUCCEEDED(D3D11CreateDevice(nullptr, drivertype, nullptr, createDeviceFlags, featureLevels.data(), featureLevels.size(),
-        D3D11_SDK_VERSION, &m_device, &resultFeatureLevel , &m_immediateContext)))
+    std::vector<D3D_FEATURE_LEVEL> featureLevels =
     {
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+    };
 
-        D3D11_VIEWPORT viewport;
-        ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+    IDXGIFactory1* dxgiFactory = nullptr;
 
-        viewport.TopLeftX = 0;
-        viewport.TopLeftY = 0;
-        viewport.Width = window->GetWidth();
-        viewport.Height = window->GetHeight();
+    HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1),reinterpret_cast<void**>(&dxgiFactory));
 
-        m_immediateContext->RSSetViewports(1, &viewport);
+    if (FAILED(hr))
+    {
+        std::cout
+            << "CreateDXGIFactory1 failed. hr=0x"
+            << std::hex << hr
+            << std::dec << std::endl;
+
+        return false;
+    }
+
+    IDXGIAdapter1* selectedAdapter = nullptr;
+
+    for (UINT i = 0; ; ++i)
+    {
+        IDXGIAdapter1* adapter = nullptr;
+
+        hr = dxgiFactory->EnumAdapters1(i, &adapter);
+
+        if (hr == DXGI_ERROR_NOT_FOUND)
+        {
+            break;
+        }
+
+        if (FAILED(hr))
+        {
+            continue;
+        }
+
+        DXGI_ADAPTER_DESC1 desc = {};
+        adapter->GetDesc1(&desc);
+
+        std::wcout
+            << L"Adapter " << i
+            << L": " << desc.Description
+            << std::endl;
+
+        if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+        {
+            adapter->Release();
+            continue;
+        }
+
+        std::wstring adapterName(desc.Description);
+
+        if (adapterName.find(L"NVIDIA") != std::wstring::npos)
+        {
+            selectedAdapter = adapter;
+
+            std::wcout
+                << L"Selected adapter: "
+                << desc.Description
+                << std::endl;
+
+            break;
+        }
+
+        adapter->Release();
+    }
+
+
+    D3D_FEATURE_LEVEL resultFeatureLevel = {};
+
+    if (selectedAdapter != nullptr)
+    {
+        hr = D3D11CreateDevice(
+            selectedAdapter,
+            D3D_DRIVER_TYPE_UNKNOWN,
+            nullptr,
+            createDeviceFlags,
+            featureLevels.data(),
+            static_cast<UINT>(featureLevels.size()),
+            D3D11_SDK_VERSION,
+            &m_device,
+            &resultFeatureLevel,
+            &m_immediateContext
+        );
+
+        if (SUCCEEDED(hr))
+        {
+            std::cout
+                << "D3D11CreateDevice SUCCESS\n"
+                << "Feature Level: 0x"
+                << std::hex << resultFeatureLevel
+                << std::dec << std::endl;
+
+            selectedAdapter->Release();
+            dxgiFactory->Release();
+
+
+            D3D11_VIEWPORT viewport = {};
+
+            viewport.TopLeftX = 0.0f;
+            viewport.TopLeftY = 0.0f;
+
+            viewport.Width =
+                static_cast<float>(window->GetWidth());
+
+            viewport.Height =
+                static_cast<float>(window->GetHeight());
+
+            viewport.MinDepth = 0.0f;
+            viewport.MaxDepth = 1.0f;
+
+            m_immediateContext->RSSetViewports(
+                1,
+                &viewport
+            );
+
+            return true;
+        }
+
+        std::cout
+            << "D3D11CreateDevice NVIDIA failed. hr=0x"
+            << std::hex << hr
+            << std::dec << std::endl;
+
+        selectedAdapter->Release();
+    }
+
+    std::cout << "Trying WARP..." << std::endl;
+
+    hr = D3D11CreateDevice( nullptr, D3D_DRIVER_TYPE_WARP, nullptr, createDeviceFlags, featureLevels.data(), static_cast<UINT>(featureLevels.size()), D3D11_SDK_VERSION, &m_device, &resultFeatureLevel, &m_immediateContext);
+
+    if (SUCCEEDED(hr))
+    {
+        std::cout
+            << "D3D11CreateDevice WARP SUCCESS\n"
+            << "Feature Level: 0x"
+            << std::hex << resultFeatureLevel
+            << std::dec << std::endl;
+
+        dxgiFactory->Release();
+
+        D3D11_VIEWPORT viewport = {};
+
+        viewport.TopLeftX = 0.0f;
+        viewport.TopLeftY = 0.0f;
+
+        viewport.Width = static_cast<float>(window->GetWidth());
+
+        viewport.Height = static_cast<float>(window->GetHeight());
+
+        viewport.MinDepth = 0.0f;
+        viewport.MaxDepth = 1.0f;
+
+        m_immediateContext->RSSetViewports( 1,&viewport);
 
         return true;
     }
 
-  }
+    std::cout
+        << "D3D11CreateDevice WARP failed. hr=0x"
+        << std::hex << hr
+        << std::dec << std::endl;
 
-  return false;
+    dxgiFactory->Release();
+
+    return false;
 }
 
 void DX11GraphicsAPI::CleanUpResources()
