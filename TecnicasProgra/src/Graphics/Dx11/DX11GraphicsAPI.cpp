@@ -339,7 +339,6 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
 void DX11GraphicsAPI::CleanUpResources()
 {
 }
-
 IDXGISwapChain* DX11GraphicsAPI::CreateSwapChain_internal(HWND hwnd, uint32_t width, uint32_t height, GAPI_FORMAT::K format)
 {
     IDXGIFactory1* dxgiFactory1 = nullptr;
@@ -362,13 +361,16 @@ IDXGISwapChain* DX11GraphicsAPI::CreateSwapChain_internal(HWND hwnd, uint32_t wi
 
             if ( SUCCEEDED (hr) )
             {
-                if (dxgiFactory1->QueryInterface(__uuidof(IDXGIFactory2), reinterpret_cast<void**>(&dxgiFactory2)))
+                hr = dxgiFactory1->QueryInterface(__uuidof(IDXGIFactory2), reinterpret_cast<void**>(&dxgiFactory2));
+
+                if (SUCCEEDED(hr))
                 {
 
                     DXGI_SWAP_CHAIN_DESC1 sd = {};
+
                     sd.Width = width;
                     sd.Height = height;
-                    sd.Format = Dx11HELPERS:: GetDX11Format_internal(format);
+                    sd.Format = Dx11HELPERS::GetDX11Format_internal(format);
                     sd.SampleDesc.Count = 1;
                     sd.SampleDesc.Quality = 0;
                     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -377,18 +379,21 @@ IDXGISwapChain* DX11GraphicsAPI::CreateSwapChain_internal(HWND hwnd, uint32_t wi
                     sd.Scaling = DXGI_SCALING_NONE;
                     sd.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 
-                    if (SUCCEEDED(dxgiFactory2->CreateSwapChainForHwnd(m_device, hwnd, &sd, nullptr, nullptr, &swapChain1)))
+                    hr = dxgiFactory2->CreateSwapChainForHwnd(m_device, hwnd, &sd, nullptr, nullptr, &swapChain1);
+
+                    if (SUCCEEDED(hr))
                     {
-                        swapChain1->QueryInterface(__uuidof(IDXGISwapChain), reinterpret_cast<void**>(&ResultSwapChain));
+                        hr = swapChain1->QueryInterface(__uuidof(IDXGISwapChain), reinterpret_cast<void**>(&ResultSwapChain));
                     }
                 }
                 else
                 {
                     DXGI_SWAP_CHAIN_DESC sd = {};
+
                     sd.BufferCount = 1;
                     sd.BufferDesc.Width = width;
                     sd.BufferDesc.Height = height;
-                    sd.BufferDesc.Format = Dx11HELPERS::GetDX11Format_internal(format);
+                    sd.BufferDesc.Format =Dx11HELPERS::GetDX11Format_internal(format);
                     sd.BufferDesc.RefreshRate.Numerator = 60;
                     sd.BufferDesc.RefreshRate.Denominator = 1;
                     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -397,8 +402,7 @@ IDXGISwapChain* DX11GraphicsAPI::CreateSwapChain_internal(HWND hwnd, uint32_t wi
                     sd.SampleDesc.Quality = 0;
                     sd.Windowed = TRUE;
 
-
-                    dxgiFactory1->CreateSwapChain(m_device, &sd, &ResultSwapChain);
+                    hr = dxgiFactory1->CreateSwapChain(m_device, &sd, &ResultSwapChain);
                 }
 
                 dxgiFactory1->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
