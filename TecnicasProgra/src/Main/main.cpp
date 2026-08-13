@@ -73,8 +73,8 @@ int main()
     uint32_t width = 800;
     uint32_t height = 600;
 
-    mathfu::Vector<float,3> Eye(20.0f, 100.0f, 200.0f); 
-    //mathfu::Vector<float,3> Eye(150.0f, 150.0f, 500.0f); 
+    //mathfu::Vector<float,3> Eye(20.0f, 100.0f, 200.0f); 
+    mathfu::Vector<float,3> Eye(150.0f, 150.0f, 500.0f); 
     mathfu::Vector<float,3> At(0.0f, 0.0f, 0.0f);
     mathfu::Vector<float,3> Up(0.0f, 1.0f, 0.0f);
 
@@ -354,9 +354,9 @@ int main()
 
     //float planeDistOrigin = (planePosition - Eye).Length();
 
-    mathfu::Matrix <float, 4 > planeWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(40, 40, 40));
+    mathfu::Matrix <float, 4 > planeWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(100, 100, 100));
 
-    mathfu::Matrix <float, 4 > planeWorldTranslation = mathfu::Matrix<float, 4, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0,0,0));
+    mathfu::Matrix <float, 4 > planeWorldTranslation = mathfu::Matrix<float, 4, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0,-100,0));
 
     mathfu::Matrix<float, 4 > planeWorldRotation = mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(mathfu::kPi*0.5f));
 
@@ -458,9 +458,9 @@ int main()
         graphics->SetTopology(p_topology);
         graphics->SetSampler(0, mySampler);
 
-        graphics->SetTexture2D(2, cubeTexture ? cubeTexture : defaultNormalTexture);
-        graphics->SetTexture2D(3, cubeTexture ? cubeTexture : defaultAlbedoTexture);
-        graphics->SetTexture2D(4, cubeTexture ? cubeTexture : defaultSpecularTexture);
+        graphics->SetTexture2D(2,  defaultNormalTexture);
+        graphics->SetTexture2D(3,  cubeTexture ? cubeTexture : defaultAlbedoTexture);
+        //graphics->SetTexture2D(4, defaultSpecularTexture);
 
         graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
         graphics->SetIndexBuffer(p_planeIndexBuffer);
