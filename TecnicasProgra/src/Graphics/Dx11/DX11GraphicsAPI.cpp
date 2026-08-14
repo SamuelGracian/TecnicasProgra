@@ -310,11 +310,6 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
 
     if (FAILED(hr))
     {
-        //std::cout
-        //    << "CreateDXGIFactory1 failed. hr=0x"
-        //    << std::hex << hr
-        //    << std::dec << std::endl;
-
         return false;
     }
 
@@ -339,11 +334,6 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
         DXGI_ADAPTER_DESC1 desc = {};
         adapter->GetDesc1(&desc);
 
-        //std::wcout
-        //    << L"Adapter " << i
-        //    << L": " << desc.Description
-        //    << std::endl;
-
         if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
         {
             adapter->Release();
@@ -355,11 +345,6 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
         if (adapterName.find(L"NVIDIA") != std::wstring::npos)
         {
             selectedAdapter = adapter;
-
-            //std::wcout
-            //    << L"Selected adapter: "
-            //    << desc.Description
-            //    << std::endl;
 
             break;
         }
@@ -387,11 +372,6 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
 
         if (SUCCEEDED(hr))
         {
-            //std::cout
-            //    << "D3D11CreateDevice SUCCESS\n"
-            //    << "Feature Level: 0x"
-            //    << std::hex << resultFeatureLevel
-            //    << std::dec << std::endl;
 
             selectedAdapter->Release();
             dxgiFactory->Release();
@@ -419,26 +399,14 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
             return true;
         }
 
-        //std::cout
-        //    << "D3D11CreateDevice NVIDIA failed. hr=0x"
-        //    << std::hex << hr
-        //    << std::dec << std::endl;
-
         selectedAdapter->Release();
     }
 
-    //std::cout << "Trying WARP..." << std::endl;
 
     hr = D3D11CreateDevice( nullptr, D3D_DRIVER_TYPE_WARP, nullptr, createDeviceFlags, featureLevels.data(), static_cast<UINT>(featureLevels.size()), D3D11_SDK_VERSION, &m_device, &resultFeatureLevel, &m_immediateContext);
 
     if (SUCCEEDED(hr))
     {
-        //std::cout
-        //    << "D3D11CreateDevice WARP SUCCESS\n"
-        //    << "Feature Level: 0x"
-        //    << std::hex << resultFeatureLevel
-        //    << std::dec << std::endl;
-
         dxgiFactory->Release();
 
         D3D11_VIEWPORT viewport = {};
@@ -458,10 +426,6 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
         return true;
     }
 
-    //std::cout
-    //    << "D3D11CreateDevice WARP failed. hr=0x"
-    //    << std::hex << hr
-    //    << std::dec << std::endl;
 
     dxgiFactory->Release();
 
@@ -582,13 +546,8 @@ ID3DBlob* DX11GraphicsAPI::CompileShader_internal(const std::string& shaderCode,
 
         uint32_t dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
-        // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
-        // Setting this flag improves the shader debugging experience, but still allows 
-        // the shaders to be optimized and to run exactly the way they will run in 
-        // the release configuration of this program.
         dwShaderFlags |= D3DCOMPILE_DEBUG;
 
-        // Disable optimizations to further improve shader debugging
         dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
@@ -945,7 +904,7 @@ void DX11GraphicsAPI::Draw(uint32_t vertexCount, uint32_t startVertexLocation)
 {
     if (m_immediateContext)
     {
-       // m_immediateContext->Draw(vertexCount, startVertexLocation);
+
         m_immediateContext->DrawIndexed(vertexCount, startVertexLocation, 0);
     }
 }
@@ -982,40 +941,6 @@ std::shared_ptr<ViewPort> DX11GraphicsAPI::CreateViewPort(float width, float hei
     return std::shared_ptr<ViewPort>();
 }
 
-//void DX11GraphicsAPI::SetRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, std::weak_ptr<DepthStencilView> depthStencilView)
-//{
-//    if (m_immediateContext == nullptr)
-//    {
-//        std::cout << "Null immediate context" << std::endl;
-//        return;
-//    }
-//
-//    ID3D11RenderTargetView* rtv = nullptr;
-//    ID3D11DepthStencilView* dsv = nullptr;
-//
-//    // Get RenderTargetView
-//    if (!renderTargetView.expired())
-//    {
-//        std::shared_ptr<Dx11RenderTargetView> tempRTV = std::reinterpret_pointer_cast<Dx11RenderTargetView>(renderTargetView.lock());
-//        if (tempRTV && tempRTV->m_renderTargetView)
-//        {
-//            rtv = tempRTV->m_renderTargetView;
-//        }
-//    }
-//
-//    // Get DepthStencilView
-//    if (!depthStencilView.expired())
-//    {
-//        std::shared_ptr<Dx11DepthStencilView> tempDSV = std::reinterpret_pointer_cast<Dx11DepthStencilView>(depthStencilView.lock());
-//        if (tempDSV && tempDSV->m_depthStencilView)
-//        {
-//            dsv = tempDSV->m_depthStencilView;
-//        }
-//    }
-//
-//    // Set both render target and depth stencil
-//    m_immediateContext->OMSetRenderTargets(1, &rtv, dsv);
-//}
 
 void DX11GraphicsAPI::ClearRenderTargetView(std::weak_ptr<RenderTargetView> renderTargetView, float color[4])
 {

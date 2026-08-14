@@ -68,7 +68,7 @@ PSIn VShader(VSIn input)
 
     float3 t = normalize( mul(world, float4(input.Tangents.xyz, 0.0f)).xyz);
 
-    output.TBNmatrix = transpose(float3x3(t, b, n));
+    output.TBNmatrix = transpose(float3x3(t, b, n)); // transpose to convert from world space to tangent space
 
     return output;
 }

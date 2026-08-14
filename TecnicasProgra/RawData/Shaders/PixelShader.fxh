@@ -75,34 +75,27 @@ RenderTargets PShader(PSIn input)
 {
     RenderTargets output;
 
-    float3 normal = normalize(NormalTexture.Sample(Sampler, input.UV).xyz * 2.0f - 1.0f);
-    normal = normalize(mul(input.TBNmatrix, normal));
+    float3 normal = normalize(NormalTexture.Sample(Sampler, input.UV).xyz * 2.0f - 1.0f); // Convert from [0,1] to [-1,1]
+    normal = normalize(mul(input.TBNmatrix, normal)); // Transform normal from tangent space to world space
 
-    float3 color = AlbedoTexture.Sample(Sampler, input.UV).rgb;
+    float3 color = AlbedoTexture.Sample(Sampler, input.UV).rgb; 
     float3 spec = SpecularTexture.Sample(Sampler, input.UV).rgb;
     
   // light
-    float3 lightDirection = normalize(float3(-1, 1, -1));
+    float3 lightDirection = normalize(float3(-1, 1, -1)); 
     float3 ambient = color * 0.05f;
 
-    float ndl = max(dot(normal, -lightDirection), 0.0f);
+    float ndl = max(dot(normal, -lightDirection), 0.0f); // N dot L
     float3 diffuse = ndl * color;
 
     float3 viewDirection = normalize(float3(0, 0, 1));
     float3 halfVector = normalize(lightDirection + viewDirection);
-    float specFactor = pow(max(dot(normal, halfVector), 0.0f), 16.0f);
+    float specFactor = pow(max(dot(normal, halfVector), 0.0f), 16.0f); // Blinn-Phong effect
     float3 specular = specFactor * spec;
-
-    //float4 lightSpacePos = mul(mul(ShadowProyection, ShadowView), float4(input.WorldPosition, 1.0f));
+    
     float4 lightSpacePos = input.ShadowPosition;
 
-    //float inverseW = rcp(lightSpacePos.w);
-
-    //float2 shadowUV = lightSpacePos.xy * inverseW * 0.5f + 0.5f;
-
-    //float currentDepth =lightSpacePos.z * inverseW * 0.5f + 0.5f;
-
-    float bias = max(0.005f * (1.0f - dot(normal, -lightDirection)), 0.0005f);
+    float bias = max(0.005f * (1.0f - dot(normal, -lightDirection)), 0.0005f); 
 
 
     float shadow = 1.0f;

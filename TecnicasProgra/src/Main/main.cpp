@@ -83,7 +83,7 @@ int main()
 
 
     ///Second Camera
-    mathfu::Vector<float, 3> LightEye  (100.0f, 200.0f, 200.0f);
+    mathfu::Vector<float, 3> LightEye  (100.0f, 100.0f, 200.0f);
 
     mathfu::Vector<float, 3> LightDirection = (At - LightEye).Normalized();
 
@@ -153,12 +153,6 @@ int main()
     /// Cube model
     std::vector<SimpleVertex> CubeVertices;
     std::vector<uint16_t> CubeIndices;
- /*   if (!graphics->ImportModelAsset_Assimp("Models/CubeFile.obj", CubeVertices, CubeIndices))
-    {
-        std::cout << "Failed on Load model" << std::endl;
-        return -1;
-    }
-  */
 
     std::shared_ptr<VertexBuffer> p_pistolVertexBuffer = nullptr;
     std::shared_ptr<IndexBuffer> p_pistolIndexBuffer = nullptr;
@@ -263,7 +257,7 @@ int main()
 
 
 
-    /////////////
+    //////
     //second render target
     auto SecondRTV = graphics->CreateRenderTargetView(window->GetClientWidth(), window->GetClientHeight(), GAPI_FORMAT::FORMAT_R8G8B8A8_UNORM);
     std::vector<std::weak_ptr<RenderTargetView>> rtvs;
@@ -311,7 +305,7 @@ int main()
         std::cout << "Failed to create shadow map" << std::endl;
     }
     
-    //////////////////
+    // -- Plane Vertices
     std::vector<SimpleVertex> planeVertices =
     {
         SimpleVertex(mathfu::Vector<float,4>{-1.0f,  1.0f, 0.0f, 1.0f},
@@ -355,11 +349,6 @@ int main()
 
     ///Plane world Matrix 
 
-    //mathfu::Vector<float, 3>  planePosition(0.0f, -400.0f, -2000.0f);
-    //mathfu::Vector<float, 3>  planeScale(300.0f,300.0f,300.0f);
-
-    //float planeDistOrigin = (planePosition - Eye).Length();
-
     mathfu::Matrix <float, 4 > planeWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(300, 300, 300));
 
     mathfu::Matrix <float, 4 > planeWorldTranslation = mathfu::Matrix<float, 4, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0,-100,0));
@@ -402,11 +391,9 @@ int main()
         graphics->SetIndexBuffer(p_pistolIndexBuffer);
 
         graphics->SetConstantBuffer(constantBuffer);
-        //graphics->SetSampler(0, mySampler);
-        // Clear render target used for shadow
+
         graphics->Draw(pistolIndexCount, 0);
-        //graphics->ClearRenderTargetView(ShadowRenderTarget, blackColor);
-        //graphics->SetRasterizerState(shadowRasterizer);
+
 
 
         std::vector<std::weak_ptr<RenderTargetView>> emptyRTVs;
