@@ -310,10 +310,10 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
 
     if (FAILED(hr))
     {
-        std::cout
-            << "CreateDXGIFactory1 failed. hr=0x"
-            << std::hex << hr
-            << std::dec << std::endl;
+        //std::cout
+        //    << "CreateDXGIFactory1 failed. hr=0x"
+        //    << std::hex << hr
+        //    << std::dec << std::endl;
 
         return false;
     }
@@ -339,10 +339,10 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
         DXGI_ADAPTER_DESC1 desc = {};
         adapter->GetDesc1(&desc);
 
-        std::wcout
-            << L"Adapter " << i
-            << L": " << desc.Description
-            << std::endl;
+        //std::wcout
+        //    << L"Adapter " << i
+        //    << L": " << desc.Description
+        //    << std::endl;
 
         if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
         {
@@ -356,10 +356,10 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
         {
             selectedAdapter = adapter;
 
-            std::wcout
-                << L"Selected adapter: "
-                << desc.Description
-                << std::endl;
+            //std::wcout
+            //    << L"Selected adapter: "
+            //    << desc.Description
+            //    << std::endl;
 
             break;
         }
@@ -387,11 +387,11 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
 
         if (SUCCEEDED(hr))
         {
-            std::cout
-                << "D3D11CreateDevice SUCCESS\n"
-                << "Feature Level: 0x"
-                << std::hex << resultFeatureLevel
-                << std::dec << std::endl;
+            //std::cout
+            //    << "D3D11CreateDevice SUCCESS\n"
+            //    << "Feature Level: 0x"
+            //    << std::hex << resultFeatureLevel
+            //    << std::dec << std::endl;
 
             selectedAdapter->Release();
             dxgiFactory->Release();
@@ -419,25 +419,25 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
             return true;
         }
 
-        std::cout
-            << "D3D11CreateDevice NVIDIA failed. hr=0x"
-            << std::hex << hr
-            << std::dec << std::endl;
+        //std::cout
+        //    << "D3D11CreateDevice NVIDIA failed. hr=0x"
+        //    << std::hex << hr
+        //    << std::dec << std::endl;
 
         selectedAdapter->Release();
     }
 
-    std::cout << "Trying WARP..." << std::endl;
+    //std::cout << "Trying WARP..." << std::endl;
 
     hr = D3D11CreateDevice( nullptr, D3D_DRIVER_TYPE_WARP, nullptr, createDeviceFlags, featureLevels.data(), static_cast<UINT>(featureLevels.size()), D3D11_SDK_VERSION, &m_device, &resultFeatureLevel, &m_immediateContext);
 
     if (SUCCEEDED(hr))
     {
-        std::cout
-            << "D3D11CreateDevice WARP SUCCESS\n"
-            << "Feature Level: 0x"
-            << std::hex << resultFeatureLevel
-            << std::dec << std::endl;
+        //std::cout
+        //    << "D3D11CreateDevice WARP SUCCESS\n"
+        //    << "Feature Level: 0x"
+        //    << std::hex << resultFeatureLevel
+        //    << std::dec << std::endl;
 
         dxgiFactory->Release();
 
@@ -458,10 +458,10 @@ bool DX11GraphicsAPI::Init(std::weak_ptr<DisplaySurface> handleWindow)
         return true;
     }
 
-    std::cout
-        << "D3D11CreateDevice WARP failed. hr=0x"
-        << std::hex << hr
-        << std::dec << std::endl;
+    //std::cout
+    //    << "D3D11CreateDevice WARP failed. hr=0x"
+    //    << std::hex << hr
+    //    << std::dec << std::endl;
 
     dxgiFactory->Release();
 

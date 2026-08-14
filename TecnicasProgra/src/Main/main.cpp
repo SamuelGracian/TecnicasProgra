@@ -202,10 +202,7 @@ int main()
     
     // Cube texture
     std::shared_ptr<Texture2D> cubeTexture = nullptr;
-    if (cubeTexture = graphics->CreateTexture2DFromFile("RawData/Textures/rocks.jpg"))
-    {
-        std::cout << "Cube texture created " << std::endl;
-    }
+    cubeTexture = graphics->CreateTexture2DFromFile("RawData/Textures/rocks.jpg");
 
     //normals
     std::shared_ptr<Texture2D> normalTexture = graphics->CreateTexture2DFromFile("RawData/Textures/base_normal.jpg");
@@ -219,8 +216,17 @@ int main()
     //specular texture
     std::shared_ptr<Texture2D> specularTexture = graphics->CreateTexture2DFromFile("RawData/Textures/base_metallic.jpg");
 
-    float clearColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    // ----- Colors
+    float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    float gbufferClearColor[4] = { 0.02f, 0.08f, 0.20f, 1.0f };
+    float normalClearColor[4] = { 0.5f, 0.5f, 1.0f, 0.0f };
+    float colorClearColor[4] = { 0.02f, 0.08f, 0.20f, 1.0f };
+    float specularClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+    float backBufferClearColor[4] ={ 0.02f, 0.08f, 0.20f, 1.0f };
+
+
     uint8_t Flag = DepthStencilView::ClearFlags::Depth | DepthStencilView::ClearFlags::Stencil;
 
  
@@ -354,7 +360,7 @@ int main()
 
     //float planeDistOrigin = (planePosition - Eye).Length();
 
-    mathfu::Matrix <float, 4 > planeWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(100, 100, 100));
+    mathfu::Matrix <float, 4 > planeWorldScale = mathfu::Matrix<float, 4, 4>::FromScaleVector(mathfu::Vector<float, 3>(300, 300, 300));
 
     mathfu::Matrix <float, 4 > planeWorldTranslation = mathfu::Matrix<float, 4, 4>::FromTranslationVector(mathfu::Vector<float, 3>(0,-100,0));
 
@@ -367,6 +373,7 @@ int main()
     bool isAppRunning = true;
     while (isAppRunning)
     {
+
         window->processMessages();
 
         auto now = std::chrono::high_resolution_clock::now();
@@ -378,76 +385,48 @@ int main()
 
  //// pass 0 shadow pre process 
         mathfu::Matrix<float, 4 > modelWorldRotation = mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(time * 0.5f));
-        cameraData.worldMatrix = mathfu::Matrix<float,4> ::FromTranslationVector(modelWorldTranslation) * modelWorldScale * modelWorldRotation ;
+        mathfu::Matrix<float, 4> modelWorld = mathfu::Matrix<float, 4>::FromTranslationVector(modelWorldTranslation) * modelWorldRotation * modelWorldScale;
 
+        cameraData.worldMatrix = modelWorld;
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
-        if (shadowDepthView)
-        {
-            graphics->SetRenderTargetViews(ShadowRTVS, shadowDepthView);
-            graphics->ClearDepthStencilView(shadowDepthView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
-        }
+        graphics->SetTexture2D(5, std::weak_ptr<Texture2D>());
+
+        graphics->SetRenderTargetViews(ShadowRTVS, shadowDepthView);
+        graphics->ClearDepthStencilView(shadowDepthView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
 
         graphics->SetVertexShader(p_ShadowVertexshader);
         graphics->SetPixelShader(p_ShadowPixelShader);
         graphics->SetTopology(p_topology);
         graphics->SetVertexBuffer(p_pistolVertexBuffer, sizeof(SimpleVertex), 0);
         graphics->SetIndexBuffer(p_pistolIndexBuffer);
+
         graphics->SetConstantBuffer(constantBuffer);
-        graphics->SetSampler(0, mySampler);
-
-        //if (normalTexture) graphics->SetTexture2D(2, normalTexture);
-        //if (albedoTexture) graphics->SetTexture2D(3, albedoTexture);
-        //if (specularTexture) graphics->SetTexture2D(4, specularTexture);
-
+        //graphics->SetSampler(0, mySampler);
         // Clear render target used for shadow
-        graphics->ClearRenderTargetView(ShadowRenderTarget, blackColor);
-
-        graphics->SetRasterizerState(shadowRasterizer);
         graphics->Draw(pistolIndexCount, 0);
+        //graphics->ClearRenderTargetView(ShadowRenderTarget, blackColor);
+        //graphics->SetRasterizerState(shadowRasterizer);
 
-        //if ( shadowDepthView)
-        //{
-        //    float bias = 0.005f;
-        //    mathfu::Vector<float, 3> sampleWorldPos = mathfu::Vector<float, 3>(00.0f, 00.0f, 0.0f);
-        //    bool occluded = graphics->IsOccluded(shadowDepthView, sampleWorldPos, cameraData.ShadowView, cameraData.ShadowProjection, bias);
-        //    if (occluded)
-        //    {
-        //        std::cout << "Sample point is occluded by shadow map\n";
-        //    }
-        //    else
-        //    {
-        //        std::cout << "Sample point is lit\n";
-        //    }
-        //}
 
         std::vector<std::weak_ptr<RenderTargetView>> emptyRTVs;
-        graphics->SetRenderTargetViews(emptyRTVs, std::weak_ptr<DepthStencilView>()); /// Take  binded Depth Stencil View and Render Target Views
 
+        graphics->SetRenderTargetViews(emptyRTVs, std::weak_ptr<DepthStencilView>());
 
         graphics->SetShadowMapFromDepthView(5, shadowDepthView);
 
  // PASS 1: model and plane
 
-        // Unbind SRV del shadow slot
-        graphics->SetTexture2D(5, std::weak_ptr<Texture2D>());
-
         // Bind G-buffer RTVs + depth stencil
         graphics->SetRenderTargetViews(gbufferRTVs, depthStencilView);
-        graphics->ClearRenderTargetView(NormalRTV, clearColor);
-        graphics->ClearRenderTargetView(ColorRTV, clearColor);
-        graphics->ClearRenderTargetView(SpecularRTV, clearColor);
+        graphics->ClearRenderTargetView(NormalRTV, normalClearColor);
+        graphics->ClearRenderTargetView(ColorRTV, colorClearColor);
+        graphics->ClearRenderTargetView(SpecularRTV, specularClearColor);
+
+        graphics->SetShadowMapFromDepthView(5, shadowDepthView);
+
         graphics->SetRasterizerState(Rasterizer_pass1);
         graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
-
-        // --- DRAW PLANE ---
-        //float currentPlaneDist = (planePosition - Eye).Length();
-        //float scaleFactor = (planeDistOrigin > 1e-6f) ? (currentPlaneDist / planeDistOrigin) : 1.0f;
-        //mathfu::Vector<float, 3> planeScaleAdjusted = planeScale * scaleFactor;
-
-        //mathfu::Matrix<float, 4, 4> planeRotation = mathfu::Matrix<float, 4>::FromRotationMatrix(mathfu::Matrix<float, 4, 4>::RotationX(-mathfu::kPi * 0.5f));
-
-        //mathfu::Matrix<float, 4, 4> planeWorldMatrix = mathfu::Matrix<float, 4>::FromTranslationVector(planePosition) * planeRotation * mathfu::Matrix<float, 4>::FromScaleVector(planeScaleAdjusted);
 
         // -- Draw plane
         cameraData.worldMatrix = planeWorld;
@@ -460,16 +439,15 @@ int main()
 
         graphics->SetTexture2D(2,  defaultNormalTexture);
         graphics->SetTexture2D(3,  cubeTexture ? cubeTexture : defaultAlbedoTexture);
-        //graphics->SetTexture2D(4, defaultSpecularTexture);
+        graphics->SetTexture2D(4, defaultSpecularTexture);
 
         graphics->SetVertexBuffer(p_planeVertexBuffer, sizeof(SimpleVertex), 0);
         graphics->SetIndexBuffer(p_planeIndexBuffer);
+        graphics->SetConstantBuffer(constantBuffer);
         graphics->Draw(6, 0);
 
 
         // --- DRAW MODEL ---
-
-        mathfu::Matrix<float, 4, 4> modelWorld = mathfu::Matrix<float,4> ::FromTranslationVector(modelWorldTranslation) * modelWorldRotation * modelWorldScale;
 
         cameraData.worldMatrix = modelWorld;
         graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
@@ -497,7 +475,7 @@ int main()
             graphics->UpdateConstantBuffer(constantBuffer, sizeof(GeneralConstBuffer), &cameraData);
 
             graphics->SetRenderTargetView(RTView, depthStencilView);
-            graphics->ClearRenderTargetView(RTView, clearColor);
+            graphics->ClearRenderTargetView(RTView, backBufferClearColor);
             graphics->ClearDepthStencilView(depthStencilView, static_cast<DepthStencilView::ClearFlags>(Flag), 1.0f, 0);
 
             graphics->SetVertexShader(p_quadVertexShader);

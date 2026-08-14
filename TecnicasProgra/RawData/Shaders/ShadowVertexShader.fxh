@@ -31,8 +31,10 @@ PSIn VShader(VSIn input)
     PSIn output;
 
     float4x4 viewProjection = mul(mul(ShadowProyection, ShadowView), world);
+    
     output.position = mul(viewProjection, float4(input.position.xyz, 1));
     
     output.depth = (output.position.z / output.position.w) * 0.5 + 0.5;
+    
     return output;
 }

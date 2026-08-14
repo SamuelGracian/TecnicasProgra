@@ -31,6 +31,7 @@ struct PSIn
     float3x3 TBNmatrix : TEXCOORD1;
     // blinn phong
     float3 WorldPosition : TEXCOORD4;
+    float4 ShadowPosition : TEXCOORD5;
 };
 
 cbuffer ViewProjection : register(b0)
@@ -48,16 +49,26 @@ PSIn VShader(VSIn input)
 {
     PSIn output;
 
+    float4 worldPosition = mul(world, input.position);
+
     float4x4 viewProjection = mul(mul(Projection, View), world);
+
+
     output.position = mul(viewProjection, input.position);
     
-    output.WorldPosition = mul(world, input.position).xyz;
+    output.WorldPosition = worldPosition.xyz;
+    
+    output.ShadowPosition =mul(mul(ShadowProyection, ShadowView), worldPosition);
+
     output.UV = input.UV;
 
-    float3 n = normalize(mul(world, float4(input.Normals.xyz, 0)).xyz);
-    float3 b = normalize(mul(world, float4(input.Binormal.xyz, 0)).xyz);
-    float3 t = normalize(mul(world, float4(input.Tangents.xyz, 0)).xyz);
+    float3 n = normalize( mul(world, float4(input.Normals.xyz, 0.0f)).xyz);
+
+    float3 b = normalize(mul(world, float4(input.Binormal.xyz, 0.0f)).xyz);
+
+    float3 t = normalize( mul(world, float4(input.Tangents.xyz, 0.0f)).xyz);
 
     output.TBNmatrix = transpose(float3x3(t, b, n));
+
     return output;
 }
